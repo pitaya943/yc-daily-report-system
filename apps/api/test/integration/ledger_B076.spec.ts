@@ -1,6 +1,12 @@
 import * as request from 'supertest';
 import { createTestApp } from './test-app';
-import { integrationEnabled, requireIntegration, SEED_PASSWORD } from './setup';
+import {
+  integrationEnabled,
+  requireIntegration,
+  resetSeedLockouts,
+  SEED_PASSWORD,
+} from './setup';
+import { SupabaseService } from '../../src/supabase/supabase.service';
 
 const describeIntegration = integrationEnabled() ? describe : describe.skip;
 
@@ -10,6 +16,7 @@ describeIntegration('B-076 petty cash cumulative balance', () => {
   beforeAll(async () => {
     requireIntegration();
     app = await createTestApp();
+    await resetSeedLockouts(app.get(SupabaseService));
   });
 
   afterAll(async () => app.close());

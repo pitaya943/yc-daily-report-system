@@ -52,7 +52,7 @@ export class ArchivesService {
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
-      actionType: 'ARCHIVE_GENERATE',
+      actionType: 'EXPORT',
       description: `手動日報歸檔 ${date}`,
     });
     return { id: data.id };

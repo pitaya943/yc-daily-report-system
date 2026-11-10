@@ -1,6 +1,12 @@
 import * as request from 'supertest';
 import { createTestApp } from './test-app';
-import { integrationEnabled, requireIntegration, SEED_PASSWORD } from './setup';
+import {
+  integrationEnabled,
+  requireIntegration,
+  resetSeedLockouts,
+  SEED_PASSWORD,
+} from './setup';
+import { SupabaseService } from '../../src/supabase/supabase.service';
 import { periodRetentionNtd } from '@yc/payroll';
 
 const describeIntegration = integrationEnabled() ? describe : describe.skip;
@@ -11,6 +17,7 @@ describeIntegration('B-035 BDD-010 retention cap change', () => {
   beforeAll(async () => {
     requireIntegration();
     app = await createTestApp();
+    await resetSeedLockouts(app.get(SupabaseService));
   });
 
   afterAll(async () => app.close());
@@ -22,7 +29,7 @@ describeIntegration('B-035 BDD-010 retention cap change', () => {
   it('admin can update cap for current year', async () => {
     const admin = request.agent(app.getHttpServer());
     await admin.post('/auth/sign-in').send({
-      displayName: 'Kuei',
+      displayName: '種子管理員',
       password: SEED_PASSWORD,
     });
     const res = await admin

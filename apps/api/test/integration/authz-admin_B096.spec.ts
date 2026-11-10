@@ -4,6 +4,7 @@ import {
   integrationEnabled,
   requireIntegration,
   resetOwnerLockout,
+  resetSeedLockouts,
   SEED_PASSWORD,
 } from './setup';
 import { SupabaseService } from '../../src/supabase/supabase.service';
@@ -20,6 +21,7 @@ describeIntegration('B-096 B-097 admin cannot manage admin', () => {
     app = await createTestApp();
     const supabase = app.get(SupabaseService);
     await resetOwnerLockout(supabase);
+    await resetSeedLockouts(supabase);
   });
 
   afterAll(async () => {

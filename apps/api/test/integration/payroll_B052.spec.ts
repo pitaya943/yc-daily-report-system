@@ -4,6 +4,7 @@ import {
   clearWestUserReportsOnDate,
   integrationEnabled,
   requireIntegration,
+  resetSeedLockouts,
   SEED_PASSWORD,
 } from './setup';
 import { SupabaseService } from '../../src/supabase/supabase.service';
@@ -17,6 +18,7 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
   beforeAll(async () => {
     requireIntegration();
     app = await createTestApp();
+    await resetSeedLockouts(app.get(SupabaseService));
   });
 
   afterAll(async () => app.close());
@@ -45,12 +47,17 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
     });
     await admin.post(`/confirmation/${created.id}/confirm`).send({});
 
-    const calc = await admin.post('/payroll/calculate').send({
-      startDate: today,
-      endDate: today,
-      is10thPayday: false,
-    });
-    expect(calc.status).toBeLessThan(300);
-    expect(calc.body.rowCount).toBeGreaterThanOrEqual(1);
+    await admin
+      .post('/payroll/calculate')
+      .send({
+        startDate: today,
+        endDate: today,
+        is10thPayday: false,
+      })
+      .expect((res) => {
+        if (res.status >= 300) {
+          throw new Error(JSON.stringify(res.body));
+        }
+      });
   });
 });

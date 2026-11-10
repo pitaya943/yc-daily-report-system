@@ -289,7 +289,7 @@ export class PayrollService {
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
-      actionType: 'PAYROLL_CALCULATE',
+      actionType: 'EXPORT',
       description: `計薪 ${startDate}～${endDate}，${rows.length} 人`,
     });
 

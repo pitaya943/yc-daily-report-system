@@ -31,6 +31,18 @@ export async function clearWestUserReportsOnDate(
     .eq('report_date', reportDate);
 }
 
+export async function resetSeedLockouts(supabase: SupabaseService): Promise<void> {
+  const db = supabase.getServiceClient();
+  await db
+    .from('accounts')
+    .update({
+      failed_signin_count: 0,
+      lockout_until: null,
+      last_failed_signin_at: null,
+    })
+    .in('display_name', ['Kuei', '種子管理員', '種子西區']);
+}
+
 export async function resetOwnerLockout(supabase: SupabaseService): Promise<void> {
   const db = supabase.getServiceClient();
   await db
