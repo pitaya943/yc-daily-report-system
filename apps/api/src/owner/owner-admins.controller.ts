@@ -12,11 +12,7 @@ import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { validateDisplayName, validatePasswordLength } from '@yc/validation';
-
-class CreateAdminDto {
-  displayName!: string;
-  password!: string;
-}
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 /** B-096 owner-only admin management (create stub for S2). */
 @Controller('owner/admins')

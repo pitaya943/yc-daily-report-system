@@ -5,7 +5,7 @@ const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
 test('B-060 login page loads', async ({ page }) => {
   await page.goto('/login');
   await expect(page.getByRole('heading', { name: '登入' })).toBeVisible();
-  await expect(page.getByText('請選擇帳戶')).toBeVisible();
+  await expect(page.locator('select')).toBeVisible();
 });
 
 test('seeded owner can sign in', async ({ page }) => {

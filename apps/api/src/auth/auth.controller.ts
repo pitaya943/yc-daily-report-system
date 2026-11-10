@@ -11,11 +11,7 @@ import {
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { SessionAccount } from './types';
-
-class SignInDto {
-  displayName!: string;
-  password!: string;
-}
+import { SignInDto } from './dto/sign-in.dto';
 
 @Controller('auth')
 export class AuthController {
