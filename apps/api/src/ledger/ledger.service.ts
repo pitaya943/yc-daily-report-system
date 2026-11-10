@@ -81,6 +81,9 @@ export class LedgerService {
     if (body.amount < 1) {
       throw new BadRequestException('金額須為正整數');
     }
+    if (!body.description?.trim() || body.description.length > 200) {
+      throw new BadRequestException('摘要須為 1 到 200 字');
+    }
     const { data, error } = await this.db()
       .from('ledger_entries')
       .insert({
@@ -224,5 +227,36 @@ export class LedgerService {
       description: `上傳流水帳證據 ${entryId} v${version}`,
     });
     return { ok: true, version };
+  }
+
+  /** B-031 settle employee advance expense */
+  async settleEntry(account: SessionAccount, entryId: string) {
+    this.assertAdminOrOwner(account);
+    const { data: row } = await this.db()
+      .from('ledger_entries')
+      .select('id, type, payer_account_id, voided_at')
+      .eq('id', entryId)
+      .single();
+    if (!row) throw new NotFoundException();
+    if (row.voided_at) {
+      throw new BadRequestException('已作廢的紀錄不能沖銷');
+    }
+    if (row.type !== 'EXPENSE') {
+      throw new BadRequestException('僅支出可沖銷');
+    }
+    if (!row.payer_account_id) {
+      return { ok: true, message: '支出者已是公司' };
+    }
+    await this.db()
+      .from('ledger_entries')
+      .update({ payer_account_id: null })
+      .eq('id', entryId);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'LEDGER_SETTLE',
+      description: `沖銷流水帳 ${entryId}`,
+    });
+    return { ok: true };
   }
 }

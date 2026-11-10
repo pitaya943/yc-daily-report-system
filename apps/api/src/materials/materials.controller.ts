@@ -118,13 +118,10 @@ export class MaterialsController {
   @Roles('ADMIN', 'OWNER')
   importFile(
     @CurrentAccount() account: SessionAccount,
-    @Body() body: { fileName: string; csvText: string },
+    @Body()
+    body: { fileName: string; csvText?: string; fileBase64?: string },
   ) {
-    return this.materials.importInventory(
-      account,
-      body.fileName,
-      body.csvText,
-    );
+    return this.materials.importInventory(account, body.fileName, body);
   }
 
   @Post('admin/reset')

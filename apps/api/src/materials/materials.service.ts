@@ -13,6 +13,7 @@ import {
   stockColourHint,
   validateMaterialRequestQty,
 } from '@yc/validation';
+import { Workbook } from 'exceljs';
 
 @Injectable()
 export class MaterialsService {
@@ -341,16 +342,19 @@ export class MaterialsService {
     return { ok: true };
   }
 
-  /** B-054 B-066 CSV import with quarantine on mismatch. */
-  async importInventory(
-    account: SessionAccount,
+  private parseImportRows(
     fileName: string,
-    csvText: string,
-  ) {
-    if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+    payload: { csvText?: string; fileBase64?: string },
+  ): Map<string, number> {
+    const fileRows = new Map<string, number>();
+    const lower = fileName.toLowerCase();
+    if (lower.endsWith('.xlsx')) {
+      throw new BadRequestException(ValidationMessages.importFileInvalid);
     }
-    const lines = csvText.split(/\r?\n/).filter((l) => l.trim());
+    if (!lower.endsWith('.csv') && !payload.csvText) {
+      throw new BadRequestException(ValidationMessages.importFileInvalid);
+    }
+    const lines = (payload.csvText ?? '').split(/\r?\n/).filter((l) => l.trim());
     if (lines.length < 2) {
       throw new BadRequestException(ValidationMessages.importFileInvalid);
     }
@@ -360,13 +364,57 @@ export class MaterialsService {
     if (codeIdx < 0 || recvIdx < 0) {
       throw new BadRequestException(ValidationMessages.importFileInvalid);
     }
-    const fileRows = new Map<string, number>();
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(',');
       const code = cols[codeIdx]?.trim();
       const qty = Number(cols[recvIdx]);
       if (code && !Number.isNaN(qty)) fileRows.set(code, qty);
     }
+    return fileRows;
+  }
+
+  private async parseXlsxRows(buf: Buffer): Promise<Map<string, number>> {
+    const wb = new Workbook();
+    await wb.xlsx.load(buf as never);
+    const sheet = wb.worksheets[0];
+    if (!sheet) {
+      throw new BadRequestException(ValidationMessages.importFileInvalid);
+    }
+    let codeCol = -1;
+    let recvCol = -1;
+    const headerRow = sheet.getRow(1);
+    headerRow.eachCell((cell, col) => {
+      const v = String(cell.value ?? '').trim();
+      if (v === '材料編號') codeCol = col;
+      if (v === '實領量') recvCol = col;
+    });
+    if (codeCol < 0 || recvCol < 0) {
+      throw new BadRequestException(ValidationMessages.importFileInvalid);
+    }
+    const fileRows = new Map<string, number>();
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const code = String(row.getCell(codeCol).value ?? '').trim();
+      const qty = Number(row.getCell(recvCol).value);
+      if (code && !Number.isNaN(qty)) fileRows.set(code, qty);
+    });
+    return fileRows;
+  }
+
+  /** B-054 B-066 CSV/XLSX import with quarantine on mismatch. */
+  async importInventory(
+    account: SessionAccount,
+    fileName: string,
+    payload: { csvText?: string; fileBase64?: string },
+  ) {
+    if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
+      throw new ForbiddenException();
+    }
+    const fileRows = fileName.toLowerCase().endsWith('.xlsx')
+      ? await this.parseXlsxRows(
+          Buffer.from(payload.fileBase64 ?? '', 'base64'),
+        )
+      : this.parseImportRows(fileName, payload);
     const { data: materials } = await this.db()
       .from('materials')
       .select('id, code, received_qty, cumulative_usage, remaining_qty');

@@ -49,6 +49,7 @@ jobs:
       - run: pnpm --filter @yc/payroll run test:unit
       - run: pnpm --filter @yc/bank-crypto run test:unit
       - run: pnpm --filter @yc/api run test:unit
+      - run: node scripts/check-b-rule-coverage.mjs
 
   integration:
     runs-on: ubuntu-latest

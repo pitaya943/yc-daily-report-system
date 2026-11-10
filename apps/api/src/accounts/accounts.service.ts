@@ -365,6 +365,79 @@ export class AccountsService {
     return data.user.email;
   }
 
+  /** B-013 B-015 B-017 B-018 owner updates financial fields on USER */
+  async updateUserFinancials(
+    actor: SessionAccount,
+    targetId: string,
+    body: {
+      paymentMethod?: 'TRANSFER' | 'CASH';
+      insuranceDeduction?: number;
+      fixedSalary?: number;
+      payFixedEveryPeriod?: boolean;
+      uninsuredExempt?: boolean;
+      uninsuredRateOverride?: number | null;
+    },
+  ) {
+    if (actor.role !== 'OWNER') {
+      throw new ForbiddenException();
+    }
+    const target = await this.getAccount(targetId);
+    if (target.role === 'OWNER') throw new ForbiddenException();
+    const patch: Record<string, unknown> = {};
+    if (body.paymentMethod) patch.payment_method = body.paymentMethod;
+    if (body.insuranceDeduction !== undefined) {
+      patch.insurance_deduction = body.insuranceDeduction;
+    }
+    if (body.fixedSalary !== undefined) patch.fixed_salary = body.fixedSalary;
+    if (body.payFixedEveryPeriod !== undefined) {
+      patch.pay_fixed_every_period = body.payFixedEveryPeriod;
+    }
+    if (body.uninsuredExempt !== undefined) {
+      patch.uninsured_exempt = body.uninsuredExempt;
+    }
+    if (body.uninsuredRateOverride !== undefined) {
+      patch.uninsured_rate_override = body.uninsuredRateOverride;
+    }
+    await this.db().from('accounts').update(patch).eq('id', targetId);
+    await this.audit.write({
+      actorId: actor.id,
+      actorDisplayName: actor.displayName,
+      actionType: 'ACCOUNT_UPDATE',
+      description: `更新 ${target.display_name} 財務欄位`,
+    });
+    return { ok: true };
+  }
+
+  /** B-019 retention offset per calendar year */
+  async setRetentionOffset(
+    actor: SessionAccount,
+    targetId: string,
+    body: { calendarYear: number; offsetNtd: number },
+  ) {
+    if (actor.role !== 'OWNER' && actor.role !== 'ADMIN') {
+      throw new ForbiddenException();
+    }
+    if (targetId !== actor.id && actor.role === 'ADMIN') {
+      const target = await this.getAccount(targetId);
+      if (target.role !== 'USER') throw new ForbiddenException();
+    }
+    await this.db()
+      .from('retention_offsets')
+      .upsert({
+        account_id: targetId,
+        calendar_year: body.calendarYear,
+        offset_ntd: body.offsetNtd,
+        updated_by: actor.id,
+      });
+    await this.audit.write({
+      actorId: actor.id,
+      actorDisplayName: actor.displayName,
+      actionType: 'RETENTION_SET',
+      description: `保留金調整 ${targetId} ${body.calendarYear}=${body.offsetNtd}`,
+    });
+    return { ok: true };
+  }
+
   private async getAccount(id: string): Promise<AccountRow> {
     const { data, error } = await this.db()
       .from('accounts')

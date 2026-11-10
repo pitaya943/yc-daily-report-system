@@ -98,4 +98,24 @@ export class AccountsController {
   ) {
     return this.accounts.revealBank(actor, id);
   }
+
+  @Patch(':id/financials')
+  @Roles('OWNER')
+  financials(
+    @CurrentAccount() actor: SessionAccount,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.accounts.updateUserFinancials(actor, id, body as never);
+  }
+
+  @Patch(':id/retention-offset')
+  @Roles('ADMIN', 'OWNER')
+  retentionOffset(
+    @CurrentAccount() actor: SessionAccount,
+    @Param('id') id: string,
+    @Body() body: { calendarYear: number; offsetNtd: number },
+  ) {
+    return this.accounts.setRetentionOffset(actor, id, body);
+  }
 }

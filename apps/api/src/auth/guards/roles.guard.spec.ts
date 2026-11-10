@@ -5,7 +5,7 @@ import { RolesGuard } from './roles.guard';
 import { AuthGuard } from './auth.guard';
 import { AuditService } from '../../audit/audit.service';
 
-describe('B-096 B-006 RolesGuard', () => {
+describe('B-006 B-096 RolesGuard', () => {
   const audit = {
     logAccessDenied: jest.fn().mockResolvedValue(undefined),
   } as unknown as AuditService;

@@ -84,4 +84,12 @@ export class LedgerController {
     if (!file) throw new BadRequestException('請上傳檔案');
     return this.ledger.uploadEvidence(account, id, file);
   }
+
+  @Post('entries/:id/settle')
+  settle(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.ledger.settleEntry(account, id);
+  }
 }

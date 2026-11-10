@@ -4,8 +4,10 @@ import * as cookieParser from 'cookie-parser';
 import * as session from 'express-session';
 import { ValidationPipe } from '@nestjs/common';
 import { loadConfig } from './config';
+import { assertSafeBootstrapEnv } from './bootstrap-env';
 
 async function bootstrap() {
+  assertSafeBootstrapEnv();
   const config = loadConfig();
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());

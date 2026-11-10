@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { buildPayrollRow } from '@yc/payroll';
+import { buildPayrollRow, ytdWithOffset } from '@yc/payroll';
 import { unitsToQty } from '@yc/allocation';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
@@ -201,10 +201,18 @@ export class PayrollService {
       for (const s of ytdShares) {
         processShare(s.item_code as string, s.share_units as number, ytdAgg);
       }
-      ytdBefore = ytdAgg.retention;
-      if (annualCap > 0) {
-        ytdBefore = Math.min(ytdBefore, annualCap);
-      }
+      const { data: offsetRow } = await this.db()
+        .from('retention_offsets')
+        .select('offset_ntd')
+        .eq('account_id', acc.id)
+        .eq('calendar_year', capYear)
+        .maybeSingle();
+      const offsetNtd = (offsetRow?.offset_ntd as number) ?? 0;
+      ytdBefore = ytdWithOffset(
+        ytdAgg.retention,
+        offsetNtd,
+        annualCap,
+      );
 
       const enrolled = (acc.insurance_deduction as number) > 0;
       const uninsuredRate =
