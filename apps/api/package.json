@@ -9,7 +9,7 @@
     "lint": "echo 'api: typecheck covers S2'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:unit": "jest --config jest.config.js --testPathPattern=src/",
-    "test:integration": "jest --config jest.config.js --testPathPattern=test/integration/ --runInBand"
+    "test:integration": "jest --config jest.integration.config.js --testPathPattern=test/integration/ --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
