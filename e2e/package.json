@@ -1,0 +1,14 @@
+{
+  "name": "@yc/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "lint": "echo 'e2e lint: playwright only'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "typescript": "^5.6.3"
+  }
+}

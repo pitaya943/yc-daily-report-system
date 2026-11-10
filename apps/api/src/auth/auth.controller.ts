@@ -1,0 +1,67 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  Res,
+  Session,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
+import { AuthService } from './auth.service';
+import { SessionAccount } from './types';
+
+class SignInDto {
+  displayName!: string;
+  password!: string;
+}
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly auth: AuthService) {}
+
+  @Get('sign-in-names')
+  async signInNames(@Query('type') type: 'admin' | 'employee') {
+    const signInType = type === 'employee' ? 'employee' : 'admin';
+    const names = await this.auth.listSignInNames(signInType);
+    return { names };
+  }
+
+  @Post('sign-in')
+  async signIn(
+    @Body() body: SignInDto,
+    @Req() req: Request,
+    @Session() session: Request['session'],
+  ) {
+    const clientAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket.remoteAddress ||
+      'unknown';
+    const account = await this.auth.signIn({
+      displayName: body.displayName,
+      password: body.password,
+      clientAddress,
+    });
+    session.account = account;
+    session.lastActivityMs = Date.now();
+    return { account: { displayName: account.displayName, role: account.role } };
+  }
+
+  @Post('sign-out')
+  signOut(@Session() session: Request['session'], @Res() res: Response) {
+    session.destroy(() => {
+      res.clearCookie('yc_session');
+      res.json({ ok: true });
+    });
+  }
+
+  @Get('session')
+  sessionInfo(@Session() session: Request['session']) {
+    const account: SessionAccount | undefined = session.account;
+    if (!account) {
+      return { signedIn: false };
+    }
+    return { signedIn: true, account };
+  }
+}
