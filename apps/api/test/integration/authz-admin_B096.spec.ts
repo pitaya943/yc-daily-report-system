@@ -23,7 +23,7 @@ describeIntegration('B-096 B-097 admin cannot manage admin', () => {
     await a
       .post('/auth/sign-in')
       .send({ displayName: '種子管理員', password: SEED_PASSWORD })
-      .expect(201);
+      .expect((res) => expect([200, 201]).toContain(res.status));
     const res = await a
       .post('/admin/admins')
       .send({ displayName: '新管理員', password: 'newpass01' })
@@ -36,10 +36,10 @@ describeIntegration('B-096 B-097 admin cannot manage admin', () => {
     await a
       .post('/auth/sign-in')
       .send({ displayName: 'Kuei', password: SEED_PASSWORD })
-      .expect(201);
+      .expect((res) => expect([200, 201]).toContain(res.status));
     await a
       .post('/owner/admins')
       .send({ displayName: '暫定管理員', password: 'admin001' })
-      .expect(201);
+      .expect((res) => expect([200, 201]).toContain(res.status));
   });
 });

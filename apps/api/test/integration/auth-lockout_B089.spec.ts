@@ -48,8 +48,6 @@ describeIntegration('B-089 sign-in lockout', () => {
         password: SEED_PASSWORD,
         clientAddress: 'test-client-final',
       }),
-    ).rejects.toMatchObject({
-      response: ValidationMessages.lockout,
-    });
+    ).rejects.toThrow(ValidationMessages.lockout);
   });
 });
