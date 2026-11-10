@@ -26,6 +26,10 @@ async function shot(page: import('@playwright/test').Page, name: string) {
 async function login(page: import('@playwright/test').Page, type: RegExp, user: string) {
   await page.context().clearCookies();
   await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  const reset = page.getByRole('button', { name: '重選' });
+  if (await reset.isVisible().catch(() => false)) {
+    await reset.click();
+  }
   await page.getByRole('button', { name: type }).click();
   await page.selectOption('select', { label: user });
   await page.fill('input[type="password"]', SEED_PASSWORD);
