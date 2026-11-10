@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
@@ -35,6 +36,24 @@ export class ReportsController {
   @Roles('USER')
   mine(@CurrentAccount() account: SessionAccount) {
     return this.reports.listOwnReports(account);
+  }
+
+  @Get('history')
+  @Roles('USER')
+  history(
+    @CurrentAccount() account: SessionAccount,
+    @Query('status') status?: string,
+  ) {
+    return this.reports.listHistory(account, { status });
+  }
+
+  @Get('history/admin')
+  @Roles('ADMIN', 'OWNER')
+  adminHistory(
+    @CurrentAccount() account: SessionAccount,
+    @Query('status') status?: string,
+  ) {
+    return this.reports.listAdminHistory(account, { status });
   }
 
   @Post()

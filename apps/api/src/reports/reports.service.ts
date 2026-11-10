@@ -206,10 +206,18 @@ export class ReportsService {
 
     if (account.role === 'USER') {
       if (report.submitter_id !== account.id) {
-        throw new ForbiddenException();
+        await this.audit.logAccessDenied(
+          account.id,
+          account.displayName,
+          'REPORT_DELETE',
+        );
+        throw new ForbiddenException('共同作業回報，無法修改/刪除');
       }
       if (report.status === 'CONFIRMED') {
         throw new ForbiddenException(ValidationMessages.confirmedReportNoEdit);
+      }
+      if (report.status !== 'PENDING' && report.status !== 'REJECTED') {
+        throw new ForbiddenException();
       }
     }
 
@@ -277,8 +285,18 @@ export class ReportsService {
     const isAdmin =
       account.role === 'ADMIN' || account.role === 'OWNER';
 
+    const { data: beforeItems } = await this.db()
+      .from('report_item_quantities')
+      .select('item_code, qty_units')
+      .eq('report_id', reportId);
+
     if (account.role === 'USER') {
       if (!isSubmitter) {
+        await this.audit.logAccessDenied(
+          account.id,
+          account.displayName,
+          'REPORT_UPDATE',
+        );
         throw new ForbiddenException('共同作業回報，無法修改/刪除');
       }
       if (report.status === 'CONFIRMED') {
@@ -342,14 +360,44 @@ export class ReportsService {
         .eq('id', reportId);
     }
 
+    const afterItems = body.quantities ?? [];
+    const diffDesc = this.describeQtyDiff(
+      (beforeItems ?? []).map((i) => ({
+        itemCode: i.item_code as string,
+        qtyUnits: i.qty_units as number,
+      })),
+      afterItems,
+    );
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
       actionType: 'REPORT_UPDATE',
-      description: `更新日報 ${reportId}`,
+      description: diffDesc,
     });
 
     return { id: reportId, unconfirmed: wasConfirmed && isAdmin };
+  }
+
+  private describeQtyDiff(
+    before: Array<{ itemCode: string; qtyUnits: number }>,
+    after: Array<{ itemCode: string; qty: number }>,
+  ): string {
+    const afterMap = new Map(
+      after.map((a) => [a.itemCode, Math.round(a.qty * 10)]),
+    );
+    const parts: string[] = [];
+    for (const b of before) {
+      const next = afterMap.get(b.itemCode) ?? 0;
+      if (next !== b.qtyUnits) {
+        parts.push(`${b.itemCode} ${b.qtyUnits / 10}→${next / 10}`);
+      }
+    }
+    for (const a of after) {
+      if (!before.find((b) => b.itemCode === a.itemCode)) {
+        parts.push(`${a.itemCode} 新增 ${a.qty}`);
+      }
+    }
+    return parts.length ? parts.join('；') : '無變更';
   }
 
   async getReportDetail(account: SessionAccount, reportId: string) {
@@ -393,6 +441,61 @@ export class ReportsService {
       .eq('submitter_id', account.id)
       .order('report_date', { ascending: false })
       .limit(50);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  /** B-063 history for submitter or collaborator */
+  async listHistory(
+    account: SessionAccount,
+    query?: { status?: string },
+  ) {
+    const { data: own } = await this.db()
+      .from('daily_reports')
+      .select('id, report_date, status, created_at, submitter_id')
+      .eq('submitter_id', account.id);
+    const { data: collab } = await this.db()
+      .from('report_collaborators')
+      .select('report_id')
+      .eq('account_id', account.id);
+    const collabIds = (collab ?? []).map((c) => c.report_id);
+    let shared: typeof own = [];
+    if (collabIds.length) {
+      const { data } = await this.db()
+        .from('daily_reports')
+        .select('id, report_date, status, created_at, submitter_id')
+        .in('id', collabIds);
+      shared = data ?? [];
+    }
+    const merged = [...(own ?? []), ...shared];
+    const uniq = new Map(merged.map((r) => [r.id, r]));
+    let rows = [...uniq.values()];
+    if (query?.status) {
+      rows = rows.filter((r) => r.status === query.status);
+    }
+    rows.sort((a, b) => (a.report_date < b.report_date ? 1 : -1));
+    return rows.slice(0, 20).map((r) => ({
+      ...r,
+      role: r.submitter_id === account.id ? 'submitter' : 'collaborator',
+      canEdit:
+        r.submitter_id === account.id &&
+        r.status !== 'CONFIRMED' &&
+        account.role === 'USER',
+    }));
+  }
+
+  /** B-063 admin history */
+  async listAdminHistory(account: SessionAccount, query?: { status?: string }) {
+    if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
+      throw new ForbiddenException();
+    }
+    let q = this.db()
+      .from('daily_reports')
+      .select('id, report_date, status, submitter_id, created_at')
+      .order('report_date', { ascending: false })
+      .limit(20);
+    if (query?.status) q = q.eq('status', query.status);
+    const { data, error } = await q;
     if (error) throw new Error(error.message);
     return data ?? [];
   }

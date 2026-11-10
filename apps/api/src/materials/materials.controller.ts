@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentAccount } from '../common/current-account.decorator';
@@ -53,5 +61,56 @@ export class MaterialsController {
     @Param('id') id: string,
   ) {
     return this.materials.rejectRequest(account, id);
+  }
+
+  @Post('requests/:id/cancel')
+  @Roles('USER')
+  cancel(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.materials.cancelRequest(account, id);
+  }
+
+  @Post('admin/items')
+  @Roles('ADMIN', 'OWNER')
+  adminAdd(
+    @CurrentAccount() account: SessionAccount,
+    @Body()
+    body: {
+      name: string;
+      unit: string;
+      code?: string;
+      specification?: string;
+      tab?: number;
+      remainingQty?: number;
+    },
+  ) {
+    return this.materials.adminAddMaterial(account, body);
+  }
+
+  @Post('admin/items/:id')
+  @Roles('ADMIN', 'OWNER')
+  adminUpdate(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      remainingQty?: number;
+      cumulativeUsage?: number;
+      hidden?: boolean;
+      tab?: number;
+    },
+  ) {
+    return this.materials.adminUpdateMaterial(account, id, body);
+  }
+
+  @Delete('admin/items/:id')
+  @Roles('ADMIN', 'OWNER')
+  adminDelete(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.materials.adminDeleteMaterial(account, id);
   }
 }

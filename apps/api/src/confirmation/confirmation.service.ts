@@ -27,7 +27,7 @@ export class ConfirmationService {
     }
   }
 
-  async listPendingOrdinary(account: SessionAccount) {
+  async listPendingBigMeter(account: SessionAccount) {
     this.assertAdminOrOwner(account);
     const today = taipeiYmd();
     const start = this.addDays(today, -30);
@@ -48,7 +48,45 @@ export class ConfirmationService {
       .in('id', submitterIds);
     const byId = new Map((accounts ?? []).map((a) => [a.id, a]));
     return list
+      .filter((r) => byId.get(r.submitter_id)?.big_meter)
+      .map((r) => ({
+        ...r,
+        submitter: byId.get(r.submitter_id),
+        archived: Boolean(byId.get(r.submitter_id)?.archived_at),
+      }));
+  }
+
+  async listPendingOrdinary(
+    account: SessionAccount,
+    query?: { from?: string; to?: string; zone?: string },
+  ) {
+    this.assertAdminOrOwner(account);
+    const today = taipeiYmd();
+    const start = query?.from ?? this.addDays(today, -30);
+    const end = query?.to ?? today;
+    const { data: reports, error } = await this.db()
+      .from('daily_reports')
+      .select('id, report_date, status, submitter_id')
+      .eq('status', 'PENDING')
+      .gte('report_date', start)
+      .lte('report_date', end)
+      .order('report_date', { ascending: false });
+    if (error) throw new Error(error.message);
+    const list = reports ?? [];
+    if (!list.length) return [];
+    const submitterIds = [...new Set(list.map((r) => r.submitter_id))];
+    const { data: accounts } = await this.db()
+      .from('accounts')
+      .select('id, display_name, big_meter, archived_at, zone')
+      .in('id', submitterIds);
+    const byId = new Map((accounts ?? []).map((a) => [a.id, a]));
+    return list
       .filter((r) => !byId.get(r.submitter_id)?.big_meter)
+      .filter((r) => {
+        if (!query?.zone) return true;
+        const z = byId.get(r.submitter_id);
+        return z && (query.zone === 'SOUTH' ? z.zone === 'SOUTH' : z.zone === 'WEST');
+      })
       .map((r) => ({
         ...r,
         submitter: byId.get(r.submitter_id),

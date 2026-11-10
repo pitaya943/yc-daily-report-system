@@ -20,7 +20,7 @@ export default function ReportPage() {
 
   useEffect(() => {
     void apiGet<{ items: WorkItem[] }>('/reports/work-items').then((d) =>
-      setItems(d.items),
+      setItems(d.items ?? []),
     );
     void apiGet<Array<{ id: string; display_name: string }>>(
       '/reports/collaborators',
@@ -56,7 +56,7 @@ export default function ReportPage() {
       <form onSubmit={onSubmit}>
         <fieldset>
           <legend>工項數量</legend>
-          {items.slice(0, 12).map((it) => (
+          {items.map((it) => (
             <label key={it.code}>
               {it.display_name}
               <input
@@ -73,7 +73,6 @@ export default function ReportPage() {
               />
             </label>
           ))}
-          <p>（其餘工項於 API 完整目錄，S3 示範前 12 項）</p>
         </fieldset>
         <fieldset>
           <legend>共同作業者</legend>

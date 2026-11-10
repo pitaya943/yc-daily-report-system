@@ -8,6 +8,8 @@ type Row = {
   id: string;
   report_date: string;
   status: string;
+  canEdit?: boolean;
+  role?: string;
 };
 
 const statusLabel: Record<string, string> = {
@@ -21,7 +23,7 @@ export default function HistoryPage() {
   const [message, setMessage] = useState('');
 
   async function reload() {
-    const data = await apiGet<Row[]>('/reports/mine');
+    const data = await apiGet<Row[]>('/reports/history');
     setRows(data);
   }
 
@@ -62,7 +64,18 @@ export default function HistoryPage() {
               <td>{r.report_date}</td>
               <td>{statusLabel[r.status] ?? r.status}</td>
               <td>
-                {r.status !== 'CONFIRMED' && (
+                {r.role === 'collaborator' && <span>共同作業，無法修改</span>}
+                {r.canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = `/history/${r.id}/edit`;
+                    }}
+                  >
+                    編輯
+                  </button>
+                )}
+                {r.canEdit && (
                   <button type="button" onClick={() => void remove(r.id, r.status)}>
                     刪除
                   </button>

@@ -17,6 +17,7 @@
     "@nestjs/platform-express": "^10.4.15",
     "@supabase/supabase-js": "^2.47.10",
     "@yc/allocation": "workspace:*",
+    "@yc/payroll": "workspace:*",
     "@yc/validation": "workspace:*",
     "pg": "^8.13.1",
     "class-transformer": "^0.5.1",

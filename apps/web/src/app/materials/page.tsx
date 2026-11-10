@@ -31,8 +31,8 @@ export default function MaterialsPage() {
 
   useEffect(() => {
     void (async () => {
-      const inv = await apiGet<Material[]>('/materials/inventory');
-      setInventory(inv);
+      const inv = await apiGet<{ items: Material[] }>('/materials/inventory');
+      setInventory(inv.items ?? []);
       const s = await fetchSession();
       if (!s.signedIn) return;
       setRole(s.account.role);

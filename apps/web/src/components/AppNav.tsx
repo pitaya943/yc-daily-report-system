@@ -26,9 +26,13 @@ export function AppNav() {
       {(role === 'ADMIN' || role === 'OWNER') && (
         <>
           <Link href="/confirmation">回報確認</Link>
-          <Link href="/materials">材料審核</Link>
+          <Link href="/admin-history">回報歷史</Link>
+          <Link href="/materials">材料</Link>
+          <Link href="/payroll">計薪</Link>
+          <Link href="/ledger">流水帳</Link>
         </>
       )}
+      {role === 'USER' && <Link href="/trial">個人試算</Link>}
       <button
         type="button"
         onClick={() =>

@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck",
-    "test:unit": "pnpm --filter @yc/validation run test:unit && pnpm --filter @yc/allocation run test:unit && pnpm --filter @yc/api run test:unit",
+    "test:unit": "pnpm --filter @yc/validation run test:unit && pnpm --filter @yc/allocation run test:unit && pnpm --filter @yc/payroll run test:unit && pnpm --filter @yc/api run test:unit",
     "test:integration": "pnpm --filter @yc/api run test:integration",
     "test:e2e": "pnpm --filter @yc/e2e run test",
     "build": "pnpm -r run build",

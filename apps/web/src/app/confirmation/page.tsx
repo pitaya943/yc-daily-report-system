@@ -23,6 +23,15 @@ export default function ConfirmationPage() {
     void reload();
   }, []);
 
+  async function batchConfirm() {
+    if (!rows.length) return;
+    await apiSend('/confirmation/batch/confirm', 'POST', {
+      reportIds: rows.map((r) => r.id),
+    });
+    setMessage('批次核准完成');
+    await reload();
+  }
+
   async function confirm(id: string) {
     try {
       await apiSend(`/confirmation/${id}/confirm`, 'POST');
@@ -47,6 +56,9 @@ export default function ConfirmationPage() {
     <main>
       <AppNav />
       <h1>回報確認</h1>
+      <button type="button" onClick={() => void batchConfirm()}>
+        批次核准
+      </button>
       <ul>
         {rows.map((r) => (
           <li key={r.id}>

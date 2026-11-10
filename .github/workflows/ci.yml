@@ -19,8 +19,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
       - run: pnpm --filter @yc/validation run typecheck
       - run: pnpm --filter @yc/allocation run typecheck
+      - run: pnpm --filter @yc/payroll run typecheck
       - run: pnpm --filter @yc/api run typecheck
       - run: pnpm --filter @yc/web run typecheck
 
@@ -38,8 +40,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
       - run: pnpm --filter @yc/validation run test:unit
       - run: pnpm --filter @yc/allocation run test:unit
+      - run: pnpm --filter @yc/payroll run test:unit
       - run: pnpm --filter @yc/api run test:unit
 
   integration:
@@ -68,6 +72,7 @@ jobs:
       - run: supabase db reset
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
       - run: pnpm --filter @yc/api run build
       - name: integration tests
         env:
@@ -105,6 +110,7 @@ jobs:
       - run: supabase db reset
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
       - run: pnpm --filter @yc/api run build
       - run: pnpm --filter @yc/web run build
       - run: pnpm --filter @yc/e2e exec playwright install --with-deps chromium
