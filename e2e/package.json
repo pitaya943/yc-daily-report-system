@@ -8,6 +8,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.47.10",
     "@playwright/test": "^1.49.0",
     "@types/pg": "^8.11.10",
     "pg": "^8.13.1",

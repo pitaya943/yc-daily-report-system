@@ -11,7 +11,8 @@ import { createHash } from 'crypto';
 
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_MINUTES = 15;
-const RATE_LIMIT_PER_MINUTE = 10;
+const RATE_LIMIT_PER_MINUTE =
+  process.env.E2E_TESTS === '1' ? 1000 : 10;
 
 type AccountRow = {
   id: string;

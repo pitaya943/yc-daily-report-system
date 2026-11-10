@@ -3,6 +3,7 @@ import path from 'node:path';
 
 export default defineConfig({
   testDir: '.',
+  globalSetup: './global-setup.ts',
   timeout: 120_000,
   workers: 1,
   use: {
@@ -18,6 +19,7 @@ export default defineConfig({
       env: {
         ...process.env,
         API_PORT: '3001',
+        E2E_TESTS: '1',
       },
     },
     {

@@ -24,6 +24,7 @@ jobs:
       - run: pnpm --filter @yc/validation run typecheck
       - run: pnpm --filter @yc/allocation run typecheck
       - run: pnpm --filter @yc/payroll run typecheck
+      - run: pnpm --filter @yc/bank-crypto run typecheck
       - run: pnpm --filter @yc/api run typecheck
       - run: pnpm --filter @yc/web run typecheck
 
@@ -129,4 +130,5 @@ jobs:
           WEB_ORIGIN: http://127.0.0.1:3000
           DATABASE_URL: ${{ env.DATABASE_URL }}
           BANK_ENCRYPTION_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          E2E_TESTS: '1'
         run: pnpm --filter @yc/e2e run test
