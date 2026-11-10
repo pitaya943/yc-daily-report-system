@@ -74,13 +74,9 @@ async function assertRow(
         expect(page.url()).toContain('/report');
         return;
       case 'row-4':
-        await page.goto('/login');
-        await page.getByRole('button', { name: /西區/ }).click();
-        await page.selectOption('select', { label: '種子西區' });
-        await page.fill('input[type="password"]', SEED_PASSWORD);
-        await page.getByRole('button', { name: '登入' }).click();
-        await page.waitForURL('**/report');
-        await expect(page.getByRole('link', { name: '歷史' })).toBeVisible();
+        expect((await userReq.get('/materials/inventory')).status()).toBe(200);
+        expect((await userReq.get('/reports/history?page=1')).status()).toBe(200);
+        expect((await userReq.get('/settings/system')).status()).toBe(403);
         return;
       case 'row-5':
         expect(
