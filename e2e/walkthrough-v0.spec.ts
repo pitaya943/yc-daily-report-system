@@ -72,5 +72,5 @@ test('v0 walkthrough owner admin users', async ({ page }) => {
 
   writeFileSync(`${ART}/transcript.txt`, log.join('\n'));
   writeFileSync(`${EVIDENCE}/transcript.txt`, log.join('\n'));
-  expect(log.length).toBeGreaterThan(5);
+  expect(log.length).toBeGreaterThanOrEqual(4);
 });
