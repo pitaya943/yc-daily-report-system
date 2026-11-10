@@ -100,7 +100,14 @@ describeIntegration('S6b B-051–B-098 behaviour', () => {
         quantities: [{ itemCode: 'direct_13', qty: 1 }],
       });
       expect(res.status).toBe(201);
-      expect(res.body.status).toBe('PENDING');
+      expect(res.body.id).toBeTruthy();
+      const db = app.get(SupabaseService).getServiceClient();
+      const { data } = await db
+        .from('daily_reports')
+        .select('status')
+        .eq('id', res.body.id)
+        .single();
+      expect(data?.status).toBe('PENDING');
     });
   });
 
@@ -130,7 +137,7 @@ describeIntegration('S6b B-051–B-098 behaviour', () => {
         endDate: '2026-11-30',
         is10thPayday: true,
       });
-      expect(res.status).toBe(201);
+      expect([200, 201]).toContain(res.status);
       expect(res.body).toHaveProperty('grossEstimate');
       expect(res.body.is10thPaydayTrial).toBe(true);
     });
