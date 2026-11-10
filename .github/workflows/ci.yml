@@ -64,7 +64,7 @@ jobs:
           cache: pnpm
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.20.5
       - run: pnpm install --frozen-lockfile
       - run: supabase start -x studio,imgproxy,logflare,vector
       - name: Export Supabase env
@@ -104,7 +104,7 @@ jobs:
           cache: pnpm
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.20.5
       - run: pnpm install --frozen-lockfile
       - run: supabase start -x studio,imgproxy,logflare,vector
       - name: Export Supabase env
