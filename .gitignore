@@ -2,6 +2,7 @@ node_modules
 dist
 .next
 apps/api/dist
+packages/validation/dist
 *.tsbuildinfo
 .env
 .env.local
