@@ -1,4 +1,5 @@
 import { loadConfig } from '../../src/config';
+import { SupabaseService } from '../../src/supabase/supabase.service';
 
 export function integrationEnabled(): boolean {
   return process.env.RUN_INTEGRATION_TESTS === '1';
@@ -16,13 +17,7 @@ export function requireIntegration(): void {
 export const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
 
 /** Reset lockout counters between integration suites (B-089). */
-export async function resetOwnerLockout(supabase: {
-  getServiceClient: () => {
-    from: (t: string) => {
-      update: (v: object) => { eq: (c: string, v: string) => Promise<unknown> };
-    };
-  };
-}): Promise<void> {
+export async function resetOwnerLockout(supabase: SupabaseService): Promise<void> {
   const db = supabase.getServiceClient();
   await db
     .from('accounts')
