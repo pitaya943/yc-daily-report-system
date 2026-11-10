@@ -10,14 +10,15 @@ describeIntegration('B-056 BDD-002 BDD-003 material approval', () => {
   let app: Awaited<ReturnType<typeof createTestApp>>;
   const materialId = 'c0000001-0001-4000-8000-000000000001';
 
-  async function resetMaterial(remaining: number, received = 100) {
+  async function resetMaterial(remaining: number, received?: number) {
     const supabase = app.get(SupabaseService);
+    const recv = received ?? remaining;
     await supabase
       .getServiceClient()
       .from('materials')
       .update({
-        cumulative_usage: received - remaining,
-        received_qty: received,
+        cumulative_usage: Math.max(0, recv - remaining),
+        received_qty: recv,
         remaining_qty: remaining,
       })
       .eq('id', materialId);
@@ -26,7 +27,11 @@ describeIntegration('B-056 BDD-002 BDD-003 material approval', () => {
   beforeAll(async () => {
     requireIntegration();
     app = await createTestApp();
-    await resetMaterial(100);
+    await resetMaterial(100, 100);
+  });
+
+  beforeEach(async () => {
+    await resetMaterial(100, 100);
   });
 
   afterAll(async () => app.close());
@@ -47,7 +52,7 @@ describeIntegration('B-056 BDD-002 BDD-003 material approval', () => {
       displayName: '種子管理員',
       password: SEED_PASSWORD,
     });
-    await resetMaterial(4);
+    await resetMaterial(4, 100);
     const fail = await admin
       .post(`/materials/requests/${body.id}/approve`)
       .send({});
@@ -56,7 +61,7 @@ describeIntegration('B-056 BDD-002 BDD-003 material approval', () => {
   });
 
   it('BDD-002 concurrent duplicate approve does not double deduct', async () => {
-    await resetMaterial(5);
+    await resetMaterial(100, 100);
     const user = request.agent(app.getHttpServer());
     await user.post('/auth/sign-in').send({
       displayName: '種子西區',
@@ -94,7 +99,7 @@ describeIntegration('B-056 BDD-002 BDD-003 material approval', () => {
       .select('remaining_qty, cumulative_usage, received_qty')
       .eq('id', materialId)
       .single();
-    expect(Number(mat?.remaining_qty)).toBe(2);
+    expect(Number(mat?.remaining_qty)).toBe(97);
     expect(Number(mat?.cumulative_usage)).toBe(3);
     expect(Number(mat?.received_qty)).toBe(100);
   });

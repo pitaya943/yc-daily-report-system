@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { clearWestUserReportsToday } from './helpers-fixtures';
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 
 test('BDD-006 delete pending frees daily cap', async ({ page, request }) => {
+  await clearWestUserReportsToday();
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
 
   const login = await request.post(`${API}/auth/sign-in`, {

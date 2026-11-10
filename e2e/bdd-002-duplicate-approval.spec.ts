@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { materialId, resetMaterialInventory } from './helpers-fixtures';
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
-const materialId = 'c0000001-0001-4000-8000-000000000001';
+
+test.beforeAll(async () => {
+  await resetMaterialInventory(100, 100);
+});
 
 test('BDD-002 duplicate approve does not double deduct', async ({ request }) => {
   const userLogin = await request.post(`${API}/auth/sign-in`, {

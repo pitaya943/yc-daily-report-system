@@ -1,6 +1,12 @@
 import * as request from 'supertest';
 import { createTestApp } from './test-app';
-import { integrationEnabled, requireIntegration, SEED_PASSWORD } from './setup';
+import {
+  clearWestUserReportsOnDate,
+  integrationEnabled,
+  requireIntegration,
+  SEED_PASSWORD,
+} from './setup';
+import { SupabaseService } from '../../src/supabase/supabase.service';
 import { taipeiYmd } from '../../src/common/taipei-time';
 import { ValidationMessages } from '@yc/validation';
 
@@ -23,6 +29,7 @@ describeIntegration('B-025 BDD-006 daily cap and delete frees quota', () => {
       .send({ displayName: '種子西區', password: SEED_PASSWORD });
 
     const today = taipeiYmd();
+    await clearWestUserReportsOnDate(app.get(SupabaseService), today);
     const ids: string[] = [];
     for (let i = 0; i < 3; i++) {
       const res = await agent

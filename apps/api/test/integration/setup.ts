@@ -17,6 +17,20 @@ export function requireIntegration(): void {
 export const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
 
 /** Reset lockout counters between integration suites (B-089). */
+const WEST_USER_ID = 'b0000001-0001-4000-8000-000000000003';
+
+export async function clearWestUserReportsOnDate(
+  supabase: SupabaseService,
+  reportDate: string,
+): Promise<void> {
+  const db = supabase.getServiceClient();
+  await db
+    .from('daily_reports')
+    .delete()
+    .eq('submitter_id', WEST_USER_ID)
+    .eq('report_date', reportDate);
+}
+
 export async function resetOwnerLockout(supabase: SupabaseService): Promise<void> {
   const db = supabase.getServiceClient();
   await db

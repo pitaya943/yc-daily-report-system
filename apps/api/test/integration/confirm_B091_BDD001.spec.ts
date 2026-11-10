@@ -1,6 +1,11 @@
 import * as request from 'supertest';
 import { createTestApp } from './test-app';
-import { integrationEnabled, requireIntegration, SEED_PASSWORD } from './setup';
+import {
+  clearWestUserReportsOnDate,
+  integrationEnabled,
+  requireIntegration,
+  SEED_PASSWORD,
+} from './setup';
 import { SupabaseService } from '../../src/supabase/supabase.service';
 import { taipeiYmd } from '../../src/common/taipei-time';
 import { unitsToQty } from '@yc/allocation';
@@ -27,10 +32,12 @@ describeIntegration('B-091 BDD-001 confirm stores B-044 shares', () => {
       displayName: '種子西區',
       password: SEED_PASSWORD,
     });
+    const reportDate = taipeiYmd();
+    await clearWestUserReportsOnDate(app.get(SupabaseService), reportDate);
     const { body: created } = await user
       .post('/reports')
       .send({
-        reportDate: taipeiYmd(),
+        reportDate,
         quantities: [{ itemCode: 'direct_13', qty: 7 }],
         collaboratorIds: [WEST_3, WEST_2],
       })
@@ -44,7 +51,7 @@ describeIntegration('B-091 BDD-001 confirm stores B-044 shares', () => {
     await admin
       .post(`/confirmation/${created.id}/confirm`)
       .send({})
-      .expect(200);
+      .expect(201);
 
     const supabase = app.get(SupabaseService);
     const { data: shares } = await supabase
