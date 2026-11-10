@@ -22,16 +22,21 @@ describeIntegration('B-035 BDD-010 retention cap change', () => {
 
   afterAll(async () => app.close());
 
+  beforeEach(async () => {
+    await resetSeedLockouts(app.get(SupabaseService));
+  });
+
   it('unit clamp matches cap mid-year without recalc past runs', () => {
     expect(periodRetentionNtd(8000, 55000, 60000)).toBe(5000);
   });
 
   it('admin can update cap for current year', async () => {
     const admin = request.agent(app.getHttpServer());
-    await admin.post('/auth/sign-in').send({
+    const login = await admin.post('/auth/sign-in').send({
       displayName: '種子管理員',
       password: SEED_PASSWORD,
     });
+    expect([200, 201]).toContain(login.status);
     const res = await admin
       .patch('/settings/retention-cap')
       .send({ capNtd: 55000 });

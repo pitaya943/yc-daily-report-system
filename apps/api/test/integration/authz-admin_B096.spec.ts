@@ -28,6 +28,10 @@ describeIntegration('B-096 B-097 admin cannot manage admin', () => {
     await app.close();
   });
 
+  beforeEach(async () => {
+    await resetSeedLockouts(app.get(SupabaseService));
+  });
+
   it('ADMIN posting to /admin/admins is forbidden and logged', async () => {
     const a = agent();
     await a

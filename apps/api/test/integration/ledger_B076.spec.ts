@@ -21,12 +21,17 @@ describeIntegration('B-076 petty cash cumulative balance', () => {
 
   afterAll(async () => app.close());
 
+  beforeEach(async () => {
+    await resetSeedLockouts(app.get(SupabaseService));
+  });
+
   it('excludes voided entries from balance', async () => {
     const admin = request.agent(app.getHttpServer());
-    await admin.post('/auth/sign-in').send({
+    const login = await admin.post('/auth/sign-in').send({
       displayName: '種子管理員',
       password: SEED_PASSWORD,
     });
+    expect([200, 201]).toContain(login.status);
     const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
     const { body: income } = await admin.post('/ledger/entries').send({
       entryDate: today,
