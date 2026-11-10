@@ -23,15 +23,20 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
 
   afterAll(async () => app.close());
 
+  beforeEach(async () => {
+    await resetSeedLockouts(app.get(SupabaseService));
+  });
+
   it('calculates payroll after confirmed report', async () => {
     const today = taipeiYmd();
     await clearWestUserReportsOnDate(app.get(SupabaseService), today);
 
     const user = request.agent(app.getHttpServer());
-    await user.post('/auth/sign-in').send({
+    const userLogin = await user.post('/auth/sign-in').send({
       displayName: '種子西區',
       password: SEED_PASSWORD,
     });
+    expect([200, 201]).toContain(userLogin.status);
     const { body: created } = await user
       .post('/reports')
       .send({
