@@ -1,0 +1,138 @@
+# Coverage check / 覆蓋檢查
+
+Command / 指令：
+
+```
+python3 docs/design/check-coverage.py
+```
+
+Working directory / 工作目錄：repository root (run 2026-11-11, Asia/Taipei).
+
+Result / 結果：
+
+```
+=== Coverage check for yc-v0 design docs ===
+Spec: docs/behavior-spec-final.md
+Unique B-ids in spec: 98
+Spec IDs: B-001, B-002, B-003, B-004, B-005, B-006, B-007, B-008, B-009, B-010, B-011, B-012, B-013, B-014, B-015, B-016, B-017, B-018, B-019, B-020, B-021, B-022, B-023, B-024, B-025, B-026, B-027, B-028, B-029, B-030, B-031, B-032, B-033, B-034, B-035, B-036, B-037, B-038, B-039, B-040, B-041, B-042, B-043, B-044, B-045, B-046, B-047, B-048, B-049, B-050, B-051, B-052, B-053, B-054, B-055, B-056, B-057, B-058, B-059, B-060, B-061, B-062, B-063, B-064, B-065, B-066, B-067, B-068, B-069, B-070, B-071, B-072, B-073, B-074, B-075, B-076, B-077, B-078, B-079, B-080, B-081, B-082, B-083, B-084, B-085, B-086, B-087, B-088, B-089, B-090, B-091, B-092, B-093, B-094, B-095, B-096, B-097, B-098
+
+B-rules marked Removed as a whole rule: none
+  permission-matrix.md: 42 unique B-ids
+  data-model.md: 98 unique B-ids
+  data-flow.md: 88 unique B-ids
+  test-plan.md: 98 unique B-ids
+
+Union of permission/data/test docs: 98
+  permission-matrix.md: 42
+  data-model.md + data-flow.md: 98
+  test-plan.md: 98
+
+--- Check 1: every spec B-id appears in permission/data/test docs ---
+PASS: every spec B-id appears in at least one of permission/data/test docs.
+
+--- Check 2: test-plan.md contains every non-Removed B-id ---
+PASS: test-plan.md contains all 98 non-Removed B-ids (Removed whole-rule IDs: none).
+
+--- Per-ID location (permission / data / test) ---
+ID       perm   data   test  
+B-001    -      Y      Y     
+B-002    -      Y      Y     
+B-003    Y      Y      Y     
+B-004    Y      Y      Y     
+B-005    Y      Y      Y     
+B-006    Y      Y      Y     
+B-007    -      Y      Y     
+B-008    Y      Y      Y     
+B-009    Y      Y      Y     
+B-010    -      Y      Y     
+B-011    -      Y      Y     
+B-012    Y      Y      Y     
+B-013    -      Y      Y     
+B-014    Y      Y      Y     
+B-015    -      Y      Y     
+B-016    -      Y      Y     
+B-017    -      Y      Y     
+B-018    -      Y      Y     
+B-019    -      Y      Y     
+B-020    -      Y      Y     
+B-021    -      Y      Y     
+B-022    -      Y      Y     
+B-023    -      Y      Y     
+B-024    -      Y      Y     
+B-025    Y      Y      Y     
+B-026    -      Y      Y     
+B-027    -      Y      Y     
+B-028    -      Y      Y     
+B-029    -      Y      Y     
+B-030    -      Y      Y     
+B-031    -      Y      Y     
+B-032    -      Y      Y     
+B-033    -      Y      Y     
+B-034    -      Y      Y     
+B-035    Y      Y      Y     
+B-036    -      Y      Y     
+B-037    -      Y      Y     
+B-038    -      Y      Y     
+B-039    -      Y      Y     
+B-040    -      Y      Y     
+B-041    -      Y      Y     
+B-042    -      Y      Y     
+B-043    -      Y      Y     
+B-044    -      Y      Y     
+B-045    -      Y      Y     
+B-046    -      Y      Y     
+B-047    -      Y      Y     
+B-048    -      Y      Y     
+B-049    -      Y      Y     
+B-050    -      Y      Y     
+B-051    -      Y      Y     
+B-052    -      Y      Y     
+B-053    -      Y      Y     
+B-054    -      Y      Y     
+B-055    -      Y      Y     
+B-056    -      Y      Y     
+B-057    Y      Y      Y     
+B-058    -      Y      Y     
+B-059    -      Y      Y     
+B-060    Y      Y      Y     
+B-061    Y      Y      Y     
+B-062    Y      Y      Y     
+B-063    Y      Y      Y     
+B-064    Y      Y      Y     
+B-065    Y      Y      Y     
+B-066    Y      Y      Y     
+B-067    Y      Y      Y     
+B-068    Y      Y      Y     
+B-069    Y      Y      Y     
+B-070    Y      Y      Y     
+B-071    Y      Y      Y     
+B-072    Y      Y      Y     
+B-073    Y      Y      Y     
+B-074    Y      Y      Y     
+B-075    Y      Y      Y     
+B-076    Y      Y      Y     
+B-077    Y      Y      Y     
+B-078    -      Y      Y     
+B-079    -      Y      Y     
+B-080    -      Y      Y     
+B-081    Y      Y      Y     
+B-082    Y      Y      Y     
+B-083    -      Y      Y     
+B-084    Y      Y      Y     
+B-085    Y      Y      Y     
+B-086    -      Y      Y     
+B-087    Y      Y      Y     
+B-088    -      Y      Y     
+B-089    Y      Y      Y     
+B-090    Y      Y      Y     
+B-091    -      Y      Y     
+B-092    -      Y      Y     
+B-093    Y      Y      Y     
+B-094    Y      Y      Y     
+B-095    Y      Y      Y     
+B-096    Y      Y      Y     
+B-097    Y      Y      Y     
+B-098    Y      Y      Y     
+
+=== RESULT: PASS ===
+```
