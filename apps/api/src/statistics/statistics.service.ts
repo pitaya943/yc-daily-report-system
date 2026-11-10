@@ -30,7 +30,17 @@ export class StatisticsService {
       .select('item_code, share_units, report_id')
       .eq('account_id', account.id);
     const reportIds = [...new Set((shares ?? []).map((s) => s.report_id))];
-    if (!reportIds.length) return { items: [], grossEstimate: 0 };
+    if (!reportIds.length) {
+      return {
+        items: [],
+        grossEstimate: 0,
+        is10thPaydayTrial: Boolean(body.is10thPayday),
+        retentionEstimate: 0,
+        uninsuredEstimate: 0,
+        fixedSalaryEstimate: 0,
+        insuranceEstimate: 0,
+      };
+    }
     const { data: reports } = await this.db()
       .from('daily_reports')
       .select('id, report_date, status')
