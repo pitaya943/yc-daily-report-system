@@ -17,6 +17,7 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/validation run typecheck
       - run: pnpm --filter @yc/api run typecheck
       - run: pnpm --filter @yc/web run typecheck

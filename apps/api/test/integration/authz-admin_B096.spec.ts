@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import * as request from 'supertest';
 import { integrationEnabled, requireIntegration, SEED_PASSWORD } from './setup';
 import { createTestApp } from './test-app';
 

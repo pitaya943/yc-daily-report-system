@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import path from 'node:path';
 
 export default defineConfig({
   testDir: '.',
@@ -9,7 +10,8 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'node apps/api/dist/main.js',
+      command: `node ${path.join(__dirname, '../apps/api/dist/main.js')}`,
+      cwd: path.join(__dirname, '..'),
       url: 'http://127.0.0.1:3001/health',
       reuseExistingServer: true,
       env: {
