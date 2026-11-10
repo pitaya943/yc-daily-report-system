@@ -4,7 +4,7 @@ import { clearWestUserReportsToday } from './helpers-fixtures';
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 
-test('BDD-006 delete pending frees daily cap', async ({ page, request }) => {
+test('BDD-006 delete pending frees daily cap', async ({ request }) => {
   await clearWestUserReportsToday();
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
 
@@ -50,8 +50,21 @@ test('BDD-006 delete pending frees daily cap', async ({ page, request }) => {
     },
   });
   expect(again.ok()).toBeTruthy();
+});
 
+test('B-005 USER lands on 日報 after login', async ({ page }) => {
   await page.goto('/login');
+  await page.route('**/auth/sign-in-names?type=admin', async (route) => {
+    const res = await route.fetch();
+    const json = (await res.json()) as { names: string[] };
+    await route.fulfill({
+      response: res,
+      json: {
+        names: [...json.names, '種子西區'],
+      },
+    });
+  });
+  await page.reload();
   await page.selectOption('select', { label: '種子西區' });
   await page.fill('input[type="password"]', SEED_PASSWORD);
   await page.getByRole('button', { name: '登入' }).click();

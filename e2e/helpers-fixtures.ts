@@ -19,7 +19,7 @@ export async function clearWestUserReportsToday(): Promise<void> {
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
   await withPg(async (client) => {
     await client.query(
-      `DELETE FROM daily_reports WHERE submitter_id = $1 AND report_date = $2::date`,
+      `DELETE FROM public.daily_reports WHERE submitter_id = $1 AND report_date = $2::date`,
       [WEST_USER_ID, today],
     );
   });
@@ -31,7 +31,7 @@ export async function resetMaterialInventory(
 ): Promise<void> {
   await withPg(async (client) => {
     await client.query(
-      `UPDATE materials SET remaining_qty = $2, received_qty = $3, cumulative_usage = $3 - $2 WHERE id = $1`,
+      `UPDATE public.materials SET remaining_qty = $2, received_qty = $3, cumulative_usage = $3 - $2 WHERE id = $1`,
       [materialId, remaining, received],
     );
   });

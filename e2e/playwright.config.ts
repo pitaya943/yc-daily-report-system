@@ -4,6 +4,7 @@ import path from 'node:path';
 export default defineConfig({
   testDir: '.',
   timeout: 120_000,
+  workers: 1,
   use: {
     baseURL: process.env.WEB_URL ?? 'http://127.0.0.1:3000',
     trace: 'on-first-retry',

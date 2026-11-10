@@ -26,7 +26,7 @@ test('BDD-003 approve refused when stock insufficient', async ({ request }) => {
 
   await withPg(async (client) => {
     await client.query(
-      `UPDATE materials SET remaining_qty = 4, cumulative_usage = 96, received_qty = 100 WHERE id = $1`,
+      `UPDATE public.materials SET remaining_qty = 4, cumulative_usage = 96, received_qty = 100 WHERE id = $1`,
       [materialId],
     );
   });
