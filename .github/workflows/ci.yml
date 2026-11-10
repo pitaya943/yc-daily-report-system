@@ -17,7 +17,7 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec tsc -p packages/validation/tsconfig.json --noEmit
+      - run: pnpm --filter @yc/validation run typecheck
       - run: pnpm --filter @yc/api run typecheck
       - run: pnpm --filter @yc/web run typecheck
 
@@ -53,7 +53,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: supabase start -x studio,imgproxy,logflare,vector
       - name: Export Supabase env
-        run: supabase status -o env >> $GITHUB_ENV
+        run: |
+          eval "$(supabase status -o env)"
+          echo "SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
       - run: supabase db reset
       - run: pnpm --filter @yc/api run build
       - name: integration tests
@@ -80,10 +84,15 @@ jobs:
       - uses: supabase/setup-cli@v1
       - run: pnpm install --frozen-lockfile
       - run: supabase start -x studio,imgproxy,logflare,vector
-      - run: supabase status -o env >> $GITHUB_ENV
+      - name: Export Supabase env
+        run: |
+          eval "$(supabase status -o env)"
+          echo "SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
       - run: supabase db reset
       - run: pnpm -r run build
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @yc/e2e exec playwright install --with-deps chromium
       - name: Playwright smoke
         env:
           API_PORT: '3001'

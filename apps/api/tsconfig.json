@@ -17,5 +17,6 @@
       "@yc/validation": ["../../packages/validation/src"]
     }
   },
-  "include": ["src/**/*", "test/**/*"]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["test/**/*.spec.ts"]
 }
