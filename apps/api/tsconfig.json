@@ -12,11 +12,7 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strict": true,
-    "paths": {
-      "@yc/validation": ["../../packages/validation/src"]
-    }
+    "strict": true
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["test/**/*.spec.ts"]
+  "include": ["src/**/*", "test/**/*"]
 }

@@ -19,6 +19,8 @@ describeIntegration('B-089 sign-in lockout', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
+    const app = moduleRef.createNestApplication();
+    await app.init();
     auth = moduleRef.get(AuthService);
     supabase = moduleRef.get(SupabaseService);
     const db = supabase.getServiceClient();

@@ -9,7 +9,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'pnpm --filter @yc/api exec nest start',
+      command: 'node apps/api/dist/main.js',
       url: 'http://127.0.0.1:3001/health',
       reuseExistingServer: true,
       env: {

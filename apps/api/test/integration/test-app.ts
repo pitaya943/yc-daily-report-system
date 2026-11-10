@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import cookieParser from 'cookie-parser';
-import session from 'express-session';
+import * as cookieParser from 'cookie-parser';
+import * as session from 'express-session';
 import { AppModule } from '../../src/app.module';
 import { loadConfig } from '../../src/config';
 

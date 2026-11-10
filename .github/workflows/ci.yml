@@ -59,6 +59,7 @@ jobs:
           echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
           echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
       - run: supabase db reset
+      - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/api run build
       - name: integration tests
         env:
@@ -93,7 +94,9 @@ jobs:
           echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
           echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
       - run: supabase db reset
-      - run: pnpm -r run build
+      - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/api run build
+      - run: pnpm --filter @yc/web run build
       - run: pnpm --filter @yc/e2e exec playwright install --with-deps chromium
       - name: Playwright smoke
         env:
