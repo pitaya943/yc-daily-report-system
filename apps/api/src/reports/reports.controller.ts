@@ -43,8 +43,12 @@ export class ReportsController {
   history(
     @CurrentAccount() account: SessionAccount,
     @Query('status') status?: string,
+    @Query('page') page?: string,
   ) {
-    return this.reports.listHistory(account, { status });
+    return this.reports.listHistory(account, {
+      status,
+      page: page ? Number(page) : 1,
+    });
   }
 
   @Get('history/admin')

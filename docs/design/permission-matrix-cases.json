@@ -1,0 +1,341 @@
+{
+  "source": "docs/design/permission-matrix.md",
+  "cases": [
+    {
+      "id": "row-1",
+      "action": "Sign in if not archived and not locked / 未封存且未鎖定時登入 (B-060, B-089). Owner listed under `admin` type `PROVISIONAL(Q-052)`",
+      "user": "Yes",
+      "admin": "Yes",
+      "owner": "Yes, same lockout `PROVISIONAL(Q-053)`"
+    },
+    {
+      "id": "row-2",
+      "action": "Sign out / 登出 (B-061)",
+      "user": "Yes",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-3",
+      "action": "Open landing page / 落地頁 (B-005)",
+      "user": "Daily report / 回報頁",
+      "admin": "Confirmation / 確認頁",
+      "owner": "Same as `ADMIN`"
+    },
+    {
+      "id": "row-4",
+      "action": "See History, Materials, Settings in sidebar / 側欄：歷史、材料、設定 (B-005)",
+      "user": "Yes",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-5",
+      "action": "See Daily report + Personal statistics / 回報頁與個人統計 (B-005)",
+      "user": "Yes",
+      "admin": "No (redirect to summary)",
+      "owner": "No (same)"
+    },
+    {
+      "id": "row-6",
+      "action": "See Summary, Confirmation, Payroll, Ledger, Archives, Big-meter group / 統計、確認、薪資、流水帳、檔案庫、大表 (B-005)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-7",
+      "action": "See Audit log in sidebar / 側欄變動紀錄 (B-005, B-067)",
+      "user": "No",
+      "admin": "No",
+      "owner": "**Yes, only the owner**"
+    },
+    {
+      "id": "row-8",
+      "action": "See Admin management / 管理員管理 (B-096)",
+      "user": "No",
+      "admin": "**No**",
+      "owner": "**Yes, only the owner**"
+    },
+    {
+      "id": "row-9",
+      "action": "Daily report — create (self, ≤ 3 own submissions per date) / 新增日報 (B-062, B-025)",
+      "user": "Yes",
+      "admin": "No (redirect + refuse)",
+      "owner": "No (same)"
+    },
+    {
+      "id": "row-10",
+      "action": "Daily report — view history / 歷史 (B-063)",
+      "user": "Own submitted + collaborator",
+      "admin": "All non-big-meter; big-meter on its own page",
+      "owner": "Same as `ADMIN`"
+    },
+    {
+      "id": "row-11",
+      "action": "Daily report — edit / 修改 (B-064)",
+      "user": "Submitter and not confirmed only",
+      "admin": "Yes, including confirmed (clears confirmation) and rejected (clears rejected)",
+      "owner": "Same as `ADMIN`"
+    },
+    {
+      "id": "row-12",
+      "action": "Daily report — delete / 刪除 (B-064)",
+      "user": "Own pending or rejected only",
+      "admin": "Yes (cannot be undone)",
+      "owner": "Same as `ADMIN`"
+    },
+    {
+      "id": "row-13",
+      "action": "Export history Excel / 匯出歷史 (B-063, B-084)",
+      "user": "Rows they can see",
+      "admin": "Current page filters",
+      "owner": "Same as `ADMIN`"
+    },
+    {
+      "id": "row-14",
+      "action": "Materials — view inventory / 查看庫存 (B-065)",
+      "user": "Visible, non-quarantined",
+      "admin": "All non-quarantined (hidden muted) + quarantine",
+      "owner": "Same as `ADMIN`"
+    },
+    {
+      "id": "row-15",
+      "action": "Materials — request / 申請 (B-065)",
+      "user": "Yes, server-checked (B-057)",
+      "admin": "No",
+      "owner": "No"
+    },
+    {
+      "id": "row-16",
+      "action": "Materials — cancel pending request / 取消待審申請",
+      "user": "Own pending only",
+      "admin": "No (review on confirmation page)",
+      "owner": "No (same)"
+    },
+    {
+      "id": "row-17",
+      "action": "Materials — add, adjust, reorder, hide, move, delete, import, export, reset, resolve quarantine / 材料管理 (B-066)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-18",
+      "action": "Personal statistics and salary trial / 個人統計與試算 (B-068)",
+      "user": "Own data only, all payroll components",
+      "admin": "No (redirect to summary)",
+      "owner": "No (same)"
+    },
+    {
+      "id": "row-19",
+      "action": "Settings — view own payment, bank last four, insurance/tax, YTD retention, item rates / 看自己的財務設定 (B-014, B-082)",
+      "user": "Yes (own only; never another person's)",
+      "admin": "Last-four default; may reveal (logged)",
+      "owner": "Same as `ADMIN` for visibility"
+    },
+    {
+      "id": "row-20",
+      "action": "Settings — change own password (current password required) / 改自己的密碼 (B-008)",
+      "user": "Yes",
+      "admin": "Yes (**B-096**, Q-047)",
+      "owner": "Yes; current password `PROVISIONAL(Q-053)`; forgotten owner password reset outsi"
+    },
+    {
+      "id": "row-21",
+      "action": "Settings — change own financial fields or own role / 改自己的財務欄位或角色",
+      "user": "No",
+      "admin": "No for role; other own fields owner-only `PROVISIONAL(Q-055)`",
+      "owner": "Own fields owner-only `PROVISIONAL(Q-054)`"
+    },
+    {
+      "id": "row-22",
+      "action": "Reveal full bank number / 查看完整銀行帳號 (B-093, B-014)",
+      "user": "Own only; logged `BANK_REVEAL`",
+      "admin": "Any account they may manage/view in payroll or account pages; logged",
+      "owner": "Same as `ADMIN`"
+    },
+    {
+      "id": "row-23",
+      "action": "Confirm/reject ordinary reports and review material requests / 確認一般回報與材料申請 (B-069, B-070)",
+      "user": "No",
+      "admin": "Yes (not undone on this page)",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-24",
+      "action": "Big-meter confirmation, history, summary / 大表確認、歷史、統計 (B-071, B-073)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-25",
+      "action": "Payroll calculate and export / 計薪與匯出 (B-072, B-094)",
+      "user": "No",
+      "admin": "Yes (includes archived-account rules)",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-26",
+      "action": "Cross-account summary / 統計報表 (B-073)",
+      "user": "No",
+      "admin": "Yes (ordinary and big-meter separate)",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-27",
+      "action": "Company ledger CRUD, settle, void, export, open evidence / 流水帳 (B-076, B-098, B-085)",
+      "user": "No",
+      "admin": "Yes: create, update, settle, export, open files at any time. Delete only if neve",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-28",
+      "action": "Daily/monthly archives list, download, manual generate, delete / 檔案庫 (B-077)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-29",
+      "action": "Account management of `USER` / 管理 `USER` 帳戶 (B-074)",
+      "user": "No",
+      "admin": "Yes (list is `USER` only, `PROVISIONAL(Q-056)`)",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-30",
+      "action": "Reset a `USER` password without the current password / 重設 `USER` 密碼 (B-008)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-31",
+      "action": "Set `USER` zone, big-meter, payment, bank, insurance, uninsured override, fixed salary, item rates, retention target / 設定 `USER` 欄位",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-32",
+      "action": "Year-end retention settlement / 保留金年度結算 (B-090)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-33",
+      "action": "Save unit prices, zone uninsured rates, global retention rates / 單價、稅率、全域保留金 (B-075)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-34",
+      "action": "Change retention annual cap / 改保留金年度上限 (B-035)",
+      "user": "No",
+      "admin": "Yes",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-35",
+      "action": "Deactivate / reactivate (separate action) / 另行停用、復原",
+      "user": "**Removed**",
+      "admin": "**Removed**",
+      "owner": "**Removed**"
+    },
+    {
+      "id": "row-36",
+      "action": "Archive / restore a `USER` / 封存、復原 `USER` (B-012, B-074)",
+      "user": "No",
+      "admin": "Yes. Cannot archive the signed-in self. 「不能封存自己目前登入的帳戶」",
+      "owner": "Yes"
+    },
+    {
+      "id": "row-37",
+      "action": "Permanently delete an account and its records / 永久刪除帳戶及紀錄 (B-095)",
+      "user": "**Removed**",
+      "admin": "**Removed**",
+      "owner": "**Removed**"
+    },
+    {
+      "id": "row-38",
+      "action": "Add an `ADMIN` account / 新增 `ADMIN` (**B-096**)",
+      "user": "No",
+      "admin": "**No**",
+      "owner": "**Yes (only the owner)**, on Admin management"
+    },
+    {
+      "id": "row-39",
+      "action": "Modify an `ADMIN` (existing fields, including password) / 修改 `ADMIN` (**B-096**)",
+      "user": "No",
+      "admin": "**No** for other admins. Own: password only",
+      "owner": "**Yes (only the owner)**"
+    },
+    {
+      "id": "row-40",
+      "action": "Archive an `ADMIN` / 封存 `ADMIN` (**B-096**)",
+      "user": "No",
+      "admin": "**No**",
+      "owner": "**Yes (only the owner)**"
+    },
+    {
+      "id": "row-41",
+      "action": "Restore an archived `ADMIN` / 復原 `ADMIN` (**B-096**)",
+      "user": "No",
+      "admin": "**No**",
+      "owner": "**Yes (only the owner)**"
+    },
+    {
+      "id": "row-42",
+      "action": "Change role `USER` ↔ `ADMIN` / 切換角色 (**B-096**)",
+      "user": "No",
+      "admin": "**No**, including own role",
+      "owner": "**Yes (only the owner)**. To `ADMIN` requires big-meter off `PROVISIONAL(Q-057)`"
+    },
+    {
+      "id": "row-43",
+      "action": "Archive the owner account / 封存 owner",
+      "user": "No",
+      "admin": "No",
+      "owner": "**No.** No such action; direct request refused with 「owner 帳戶不能封存」"
+    },
+    {
+      "id": "row-44",
+      "action": "Transfer the owner role / 移轉 owner",
+      "user": "No",
+      "admin": "No",
+      "owner": "**No** in v0"
+    },
+    {
+      "id": "row-45",
+      "action": "View audit log / 查看變動紀錄 (**B-067**, **B-097**)",
+      "user": "**No**",
+      "admin": "**No**",
+      "owner": "**Yes, only the owner** (all rows, including the owner's)"
+    },
+    {
+      "id": "row-46",
+      "action": "Edit or delete an audit row / 改或刪變動紀錄 `PROVISIONAL(Q-059)`",
+      "user": "No",
+      "admin": "No",
+      "owner": "**No**"
+    },
+    {
+      "id": "row-47",
+      "action": "Be logged for modifying ops, exports, downloads, bank reveals, blocked attempts / 操作留紀錄 (**B-097**)",
+      "user": "Same rule for everyone",
+      "admin": "Same",
+      "owner": "Same; the owner's operations are logged too"
+    },
+    {
+      "id": "row-48",
+      "action": "Ordinary viewing (open a page or list) / 一般查看",
+      "user": "Not logged",
+      "admin": "Not logged",
+      "owner": "Not logged"
+    }
+  ]
+}

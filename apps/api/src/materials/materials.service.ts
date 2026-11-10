@@ -10,6 +10,7 @@ import { SessionAccount } from '../auth/types';
 import {
   ValidationMessages,
   assertMaterialRequestable,
+  evaluateImportRow,
   stockColourHint,
   validateMaterialRequestQty,
 } from '@yc/validation';
@@ -419,18 +420,34 @@ export class MaterialsService {
       .from('materials')
       .select('id, code, received_qty, cumulative_usage, remaining_qty');
     let mismatches = 0;
+    let applied = 0;
     for (const m of materials ?? []) {
       if (!m.code) continue;
-      const bQty = fileRows.get(m.code as string);
-      if (bQty === undefined) continue;
-      const aQty = Number(m.received_qty);
-      if (Math.abs(aQty - bQty) > 0.001) {
+      const bReceived = fileRows.get(m.code as string);
+      if (bReceived === undefined) continue;
+      const snap = {
+        code: m.code as string,
+        received: Number(m.received_qty),
+        cumulative: Number(m.cumulative_usage),
+        remaining: Number(m.remaining_qty),
+      };
+      const decision = evaluateImportRow(snap, bReceived);
+      if (decision.action === 'apply') {
+        await this.db()
+          .from('materials')
+          .update({
+            received_qty: decision.receivedNew,
+            remaining_qty: decision.remainingNew,
+          })
+          .eq('id', m.id);
+        applied++;
+      } else {
         mismatches++;
         await this.db()
           .from('materials')
           .update({
             quarantined: true,
-            quarantine_note: `A=${aQty} B=${bQty}`,
+            quarantine_note: decision.note,
           })
           .eq('id', m.id);
       }
@@ -446,12 +463,37 @@ export class MaterialsService {
       actionType: 'MATERIAL_IMPORT',
       description: `庫存匯入 ${fileName}（暫存 ${mismatches} 筆）`,
     });
-    return { mismatches, comparisonLabel: label };
+    return { mismatches, applied, comparisonLabel: label };
   }
 
-  /** B-055 keep system values (A). */
+  /** B-055 keep system values (A); if x>0 apply expected received/remaining. */
   async resolveQuarantineKeepA(account: SessionAccount, materialId: string) {
-    await this.clearQuarantine(account, materialId, 'MATERIAL_KEEP_A', '保留系統值 A');
+    const { data: mat } = await this.db()
+      .from('materials')
+      .select('id, code, received_qty, cumulative_usage, remaining_qty, quarantine_note')
+      .eq('id', materialId)
+      .single();
+    if (!mat?.quarantine_note) throw new NotFoundException();
+    const patch: Record<string, unknown> = {
+      quarantined: false,
+      quarantine_note: null,
+    };
+    const xMatch = /x=(-?[0-9.]+)/.exec(mat.quarantine_note as string);
+    const expR = /A預期:實領([0-9.]+)/.exec(mat.quarantine_note as string);
+    const expRem = /庫存([0-9.]+)/.exec(mat.quarantine_note as string);
+    const x = xMatch ? Number(xMatch[1]) : 0;
+    if (x > 0 && expR && expRem) {
+      patch.received_qty = Number(expR[1]);
+      patch.remaining_qty = Number(expRem[1]);
+    }
+    await this.db().from('materials').update(patch).eq('id', materialId);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'MATERIAL_KEEP_A',
+      description: `保留系統值 A ${materialId}`,
+    });
+    return { ok: true };
   }
 
   /** B-055 sync to uploaded file (B). */

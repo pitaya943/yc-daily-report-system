@@ -77,10 +77,38 @@ export class StatisticsService {
       );
       gross += qty * (priceMap.get(s.item_code as string) ?? 0);
     }
+    const is10th = Boolean(body.is10thPayday);
+    const { data: fin } = await this.db()
+      .from('accounts')
+      .select(
+        'insurance_deduction, fixed_salary, pay_fixed_every_period, uninsured_rate_override, uninsured_exempt, big_meter',
+      )
+      .eq('id', account.id)
+      .single();
+    const uninsuredPct =
+      fin?.uninsured_rate_override != null
+        ? Number(fin.uninsured_rate_override)
+        : 3;
+    const uninsuredEstimate =
+      fin?.uninsured_exempt || fin?.big_meter
+        ? 0
+        : Math.round(gross * (uninsuredPct / 100));
+    const fixedSalaryEstimate =
+      is10th || fin?.pay_fixed_every_period
+        ? Number(fin?.fixed_salary ?? 0)
+        : 0;
+    const insuranceEstimate =
+      is10th && Number(fin?.insurance_deduction) > 0
+        ? Number(fin?.insurance_deduction)
+        : 0;
     return {
       items: [...totals.entries()].map(([code, qty]) => ({ code, qty })),
       grossEstimate: gross,
-      is10thPaydayTrial: Boolean(body.is10thPayday),
+      is10thPaydayTrial: is10th,
+      retentionEstimate: fin?.big_meter ? 0 : Math.round(gross * 0.2),
+      uninsuredEstimate,
+      fixedSalaryEstimate,
+      insuranceEstimate,
     };
   }
 

@@ -493,8 +493,10 @@ export class ReportsService {
   /** B-063 history for submitter or collaborator */
   async listHistory(
     account: SessionAccount,
-    query?: { status?: string },
+    query?: { status?: string; page?: number; pageSize?: number },
   ) {
+    const pageSize = query?.pageSize ?? 20;
+    const page = query?.page ?? 1;
     const { data: own } = await this.db()
       .from('daily_reports')
       .select('id, report_date, status, created_at, submitter_id')
@@ -519,14 +521,21 @@ export class ReportsService {
       rows = rows.filter((r) => r.status === query.status);
     }
     rows.sort((a, b) => (a.report_date < b.report_date ? 1 : -1));
-    return rows.slice(0, 20).map((r) => ({
-      ...r,
-      role: r.submitter_id === account.id ? 'submitter' : 'collaborator',
-      canEdit:
-        r.submitter_id === account.id &&
-        r.status !== 'CONFIRMED' &&
-        account.role === 'USER',
-    }));
+    const filtered = rows;
+    const slice = filtered.slice((page - 1) * pageSize, page * pageSize);
+    return {
+      page,
+      pageSize,
+      total: filtered.length,
+      rows: slice.map((r) => ({
+        ...r,
+        role: r.submitter_id === account.id ? 'submitter' : 'collaborator',
+        canEdit:
+          r.submitter_id === account.id &&
+          r.status !== 'CONFIRMED' &&
+          account.role === 'USER',
+      })),
+    };
   }
 
   /** B-063 admin history */
@@ -562,10 +571,11 @@ export class ReportsService {
 
   /** B-063 history Excel export */
   async exportHistory(account: SessionAccount, query?: { status?: string }) {
-    const rows =
+    const list =
       account.role === 'USER'
         ? await this.listHistory(account, query)
-        : await this.listAdminHistory(account, query);
+        : { rows: await this.listAdminHistory(account, query) };
+    const rows = list.rows;
     const { data: names } = await this.db()
       .from('accounts')
       .select('id, display_name');

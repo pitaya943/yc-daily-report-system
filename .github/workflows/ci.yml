@@ -133,3 +133,12 @@ jobs:
           BANK_ENCRYPTION_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
           E2E_TESTS: '1'
         run: pnpm --filter @yc/e2e run test
+      - name: Upload walkthrough evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yc-v0-walkthrough
+          path: |
+            docs/evidence/walkthrough/
+            e2e/test-results/
+          if-no-files-found: ignore

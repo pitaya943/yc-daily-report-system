@@ -1,6 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { Injectable } from '@nestjs/common';
 import { Workbook } from 'exceljs';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+import * as fontkitImport from '@pdf-lib/fontkit';
+
+const fontkit =
+  (fontkitImport as { default?: typeof fontkitImport }).default ?? fontkitImport;
+import { resolveNotoSansTcFont } from './font-path';
 import {
   Document,
   Packer,
@@ -84,6 +90,13 @@ export class ExportService {
     return Buffer.from(buf);
   }
 
+  private async embedTcFont(doc: PDFDocument) {
+    doc.registerFontkit(fontkit);
+    const fontBytes = readFileSync(resolveNotoSansTcFont());
+    return doc.embedFont(fontBytes, { subset: true });
+  }
+
+  /** B-084 A4 landscape payroll PDF with embedded Noto Sans TC (OFL). */
   async buildPayrollPdf(run: {
     startDate: string;
     endDate: string;
@@ -91,22 +104,42 @@ export class ExportService {
   }): Promise<Buffer> {
     const doc = await PDFDocument.create();
     const page = doc.addPage([842, 595]);
-    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const font = await this.embedTcFont(doc);
     const lines = [
-      `Payroll ${run.startDate} ~ ${run.endDate} (B-084 PDF)`,
+      `薪資期間 ${run.startDate} ～ ${run.endDate}`,
+      '摘要：姓名、毛額、實發（B-084）',
       ...run.rows.map(
         (r) =>
-          `${r.display_name_snapshot}: gross=${r.gross} final=${r.final_pay}`,
+          `${r.display_name_snapshot ?? ''} 毛額 ${r.gross ?? 0} 實發 ${r.final_pay ?? 0}`,
       ),
     ];
     let y = 550;
     for (const line of lines) {
-      page.drawText(line.slice(0, 110), { x: 40, y, size: 11, font });
-      y -= 16;
+      page.drawText(line, { x: 40, y, size: 12, font, color: rgb(0, 0, 0) });
+      y -= 18;
       if (y < 40) break;
     }
     const bytes = await doc.save();
     return Buffer.from(bytes);
+  }
+
+  /** B-084 板信商業銀行薪轉單 PDF (transfer rows). */
+  async buildTransferPdf(
+    rows: Array<PayrollExportRow & { bank_account_full?: string | null }>,
+  ): Promise<Buffer> {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([842, 595]);
+    const font = await this.embedTcFont(doc);
+    page.drawText('板信商業銀行薪資轉帳單', { x: 40, y: 560, size: 16, font });
+    let y = 520;
+    for (const r of rows.filter(
+      (x) => x.payment_method === 'TRANSFER' && Number(x.final_pay ?? 0) > 0,
+    )) {
+      const line = `姓名 ${r.display_name_snapshot} 帳號 ${r.bank_account_full ?? r.bank_last4} 金額 ${r.final_pay}`;
+      page.drawText(line, { x: 40, y, size: 11, font });
+      y -= 16;
+    }
+    return Buffer.from(await doc.save());
   }
 
   /** B-084 板信商業銀行薪轉單 — transfer accounts with final > 0 only. */
@@ -217,12 +250,31 @@ export class ExportService {
     return Buffer.from(buf);
   }
 
-  async buildArchiveWorkbook(archiveDate: string, rowCount: number): Promise<Buffer> {
+  /** B-077 three sheets: 西區 / 南區 / 大表 */
+  async buildArchiveWorkbook(
+    archiveDate: string,
+    zones: { west: number; south: number; bigMeter: number },
+  ): Promise<Buffer> {
     const wb = new Workbook();
-    const ws = wb.addWorksheet('日報歸檔');
-    ws.addRow(['歸檔日期', archiveDate, 'B-077']);
-    ws.addRow(['回報筆數', rowCount]);
+    for (const [name, count] of [
+      ['西區', zones.west],
+      ['南區', zones.south],
+      ['大表', zones.bigMeter],
+    ] as const) {
+      const ws = wb.addWorksheet(name);
+      ws.addRow(['歸檔日期', archiveDate]);
+      ws.addRow(['已確認回報筆數', count]);
+    }
     const buf = await wb.xlsx.writeBuffer();
     return Buffer.from(buf);
+  }
+
+  async buildArchivePdf(archiveDate: string, title: string): Promise<Buffer> {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([595, 842]);
+    const font = await this.embedTcFont(doc);
+    page.drawText(title, { x: 40, y: 780, size: 14, font });
+    page.drawText(`歸檔日 ${archiveDate}`, { x: 40, y: 750, size: 12, font });
+    return Buffer.from(await doc.save());
   }
 }

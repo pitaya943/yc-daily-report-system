@@ -26,6 +26,8 @@ export function AppNav() {
       {(role === 'ADMIN' || role === 'OWNER') && (
         <>
           <Link href="/confirmation">回報確認</Link>
+          <Link href="/confirmation-big-meter">大表確認</Link>
+          <Link href="/archives">檔案庫</Link>
           <Link href="/admin-history">回報歷史</Link>
           <Link href="/materials">材料</Link>
           <Link href="/payroll">計薪</Link>
