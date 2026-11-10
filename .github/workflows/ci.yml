@@ -20,6 +20,7 @@ jobs:
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
       - run: pnpm --filter @yc/validation run typecheck
       - run: pnpm --filter @yc/allocation run typecheck
       - run: pnpm --filter @yc/payroll run typecheck
@@ -41,9 +42,11 @@ jobs:
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
       - run: pnpm --filter @yc/validation run test:unit
       - run: pnpm --filter @yc/allocation run test:unit
       - run: pnpm --filter @yc/payroll run test:unit
+      - run: pnpm --filter @yc/bank-crypto run test:unit
       - run: pnpm --filter @yc/api run test:unit
 
   integration:
@@ -73,6 +76,7 @@ jobs:
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
       - run: pnpm --filter @yc/api run build
       - name: integration tests
         env:
@@ -82,6 +86,7 @@ jobs:
           SESSION_IDLE_MINUTES: '30'
           SEED_PASSWORD: seedpass01
           WEB_ORIGIN: http://127.0.0.1:3000
+          BANK_ENCRYPTION_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
         run: pnpm --filter @yc/api run test:integration
 
   e2e:
@@ -111,6 +116,7 @@ jobs:
       - run: pnpm --filter @yc/validation run build
       - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
       - run: pnpm --filter @yc/api run build
       - run: pnpm --filter @yc/web run build
       - run: pnpm --filter @yc/e2e exec playwright install --with-deps chromium
@@ -122,4 +128,5 @@ jobs:
           SEED_PASSWORD: seedpass01
           WEB_ORIGIN: http://127.0.0.1:3000
           DATABASE_URL: ${{ env.DATABASE_URL }}
+          BANK_ENCRYPTION_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
         run: pnpm --filter @yc/e2e run test

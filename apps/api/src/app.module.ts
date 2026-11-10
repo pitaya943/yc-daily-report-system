@@ -13,11 +13,16 @@ import { LedgerModule } from './ledger/ledger.module';
 import { SettingsModule } from './settings/settings.module';
 import { ArchivesModule } from './archives/archives.module';
 import { StatisticsModule } from './statistics/statistics.module';
+import { BankModule } from './bank/bank.module';
+import { AccountsModule } from './accounts/accounts.module';
+import { ExportModule } from './export/export.module';
+import { RetentionModule } from './retention/retention.module';
 
 @Module({
   imports: [
     SupabaseModule,
     PgModule,
+    BankModule,
     AuditModule,
     AuthModule,
     OwnerModule,
@@ -29,6 +34,9 @@ import { StatisticsModule } from './statistics/statistics.module';
     SettingsModule,
     ArchivesModule,
     StatisticsModule,
+    AccountsModule,
+    ExportModule,
+    RetentionModule,
   ],
   controllers: [HealthController],
 })

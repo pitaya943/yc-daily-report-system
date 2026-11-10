@@ -7,6 +7,7 @@ module.exports = {
     '^@yc/validation$': '<rootDir>/../../packages/validation/src',
     '^@yc/allocation$': '<rootDir>/../../packages/allocation/src',
     '^@yc/payroll$': '<rootDir>/../../packages/payroll/src',
+    '^@yc/bank-crypto$': '<rootDir>/../../packages/bank-crypto/src',
   },
   testTimeout: 120000,
 };

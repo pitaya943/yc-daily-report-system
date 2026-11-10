@@ -8,6 +8,7 @@ import { unitsToQty } from '@yc/allocation';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
+import { ExportService } from '../export/export.service';
 
 const PAYROLL_BLOCK_MSG = '單價尚未設定完整，無法計算薪資，請先補齊單價';
 
@@ -18,6 +19,7 @@ export class PayrollService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly audit: AuditService,
+    private readonly exports: ExportService,
   ) {}
 
   private db() {
@@ -321,5 +323,27 @@ export class PayrollService {
       .eq('run_id', runId)
       .order('display_name_snapshot');
     return { run, rows: rows ?? [] };
+  }
+
+  /** B-072 B-084 xlsx export for calculated run. */
+  async exportRun(account: SessionAccount, runId: string) {
+    const detail = await this.getRun(account, runId);
+    const buffer = await this.exports.buildPayrollXlsx({
+      startDate: detail.run.start_date as string,
+      endDate: detail.run.end_date as string,
+      rows: detail.rows as Array<Record<string, unknown>>,
+    });
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'EXPORT',
+      description: `匯出薪資 Excel run=${runId}`,
+    });
+    return {
+      fileName: `payroll-${runId}.xlsx`,
+      mimeType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64: buffer.toString('base64'),
+    };
   }
 }

@@ -9,42 +9,27 @@ import {
 import { Request } from 'express';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
-import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
-import { validateDisplayName, validatePasswordLength } from '@yc/validation';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { AccountsService } from '../accounts/accounts.service';
 
 /** B-096 owner-only admin management (create stub for S2). */
 @Controller('owner/admins')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('OWNER')
 export class OwnerAdminsController {
-  constructor(
-    private readonly supabase: SupabaseService,
-    private readonly audit: AuditService,
-  ) {}
+  constructor(private readonly accounts: AccountsService) {}
 
   @Post()
   async createAdmin(
     @Body() body: CreateAdminDto,
     @Session() session: Request['session'],
   ) {
-    const nameErr = validateDisplayName(body.displayName);
-    if (nameErr) {
-      throw new ForbiddenException(nameErr.message);
-    }
-    const pwErr = validatePasswordLength(body.password);
-    if (pwErr) {
-      throw new ForbiddenException(pwErr.message);
-    }
-    // Full account+auth creation lands in a later stage; S2 proves owner-only gate.
-    await this.audit.write({
-      actorId: session.account!.id,
-      actorDisplayName: session.account!.displayName,
-      actionType: 'ACCOUNT_CREATE',
-      description: `建立管理員帳戶：${body.displayName.trim()}`,
-    });
-    return { ok: true, pending: true };
+  return this.accounts.createAdmin(
+      session.account!,
+      body.displayName,
+      body.password,
+    );
   }
 }
 

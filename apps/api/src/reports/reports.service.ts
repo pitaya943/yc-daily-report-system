@@ -9,6 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import {
   ValidationMessages,
+  validateCustomItem,
   validateDailyCapCount,
   validateQtyUnits,
   validateReportDate,
@@ -272,6 +273,9 @@ export class ReportsService {
     body: {
       quantities: Array<{ itemCode: string; qty: number }>;
       collaboratorIds?: string[];
+      customItemName?: string | null;
+      customItemQty?: number | null;
+      customItemUnitPrice?: number | null;
     },
   ) {
     const { data: report, error } = await this.db()
@@ -311,6 +315,38 @@ export class ReportsService {
     const editorId = isSubmitter ? account.id : report.submitter_id;
 
     await this.applyQuantitiesToReport(reportId, editorId, body.quantities);
+
+    if (
+      body.customItemName !== undefined &&
+      (account.role === 'ADMIN' || account.role === 'OWNER')
+    ) {
+      const customErr = validateCustomItem({
+        name: body.customItemName,
+        qty: body.customItemQty,
+        unitPrice: body.customItemUnitPrice,
+      });
+      if (customErr) throw new BadRequestException(customErr.message);
+      const name = body.customItemName?.trim() ?? '';
+      if (!name) {
+        await this.db()
+          .from('daily_reports')
+          .update({
+            custom_item_name: null,
+            custom_item_qty_units: null,
+            custom_item_unit_price: null,
+          })
+          .eq('id', reportId);
+      } else {
+        await this.db()
+          .from('daily_reports')
+          .update({
+            custom_item_name: name,
+            custom_item_qty_units: this.qtyToUnits(body.customItemQty ?? 0),
+            custom_item_unit_price: body.customItemUnitPrice ?? 0,
+          })
+          .eq('id', reportId);
+      }
+    }
 
     if (body.collaboratorIds !== undefined) {
       const submitter = await this.getAccountProfile(report.submitter_id);
@@ -361,13 +397,16 @@ export class ReportsService {
     }
 
     const afterItems = body.quantities ?? [];
-    const diffDesc = this.describeQtyDiff(
+    let diffDesc = this.describeQtyDiff(
       (beforeItems ?? []).map((i) => ({
         itemCode: i.item_code as string,
         qtyUnits: i.qty_units as number,
       })),
       afterItems,
     );
+    if (body.customItemName !== undefined && isAdmin) {
+      diffDesc += `；自訂工項=${body.customItemName?.trim() || '（清除）'}`;
+    }
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
@@ -429,7 +468,11 @@ export class ReportsService {
       .from('report_item_quantities')
       .select('item_code, qty_units')
       .eq('report_id', reportId);
-    return { ...report, quantities: items ?? [] };
+    const { data: shares } = await this.db()
+      .from('report_shares')
+      .select('account_id, item_code, share_units')
+      .eq('report_id', reportId);
+    return { ...report, quantities: items ?? [], shares: shares ?? [] };
   }
 
   async listOwnReports(account: SessionAccount) {

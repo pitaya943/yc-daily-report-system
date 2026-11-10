@@ -113,4 +113,41 @@ export class MaterialsController {
   ) {
     return this.materials.adminDeleteMaterial(account, id);
   }
+
+  @Post('admin/import')
+  @Roles('ADMIN', 'OWNER')
+  importFile(
+    @CurrentAccount() account: SessionAccount,
+    @Body() body: { fileName: string; csvText: string },
+  ) {
+    return this.materials.importInventory(
+      account,
+      body.fileName,
+      body.csvText,
+    );
+  }
+
+  @Post('admin/reset')
+  @Roles('ADMIN', 'OWNER')
+  reset(@CurrentAccount() account: SessionAccount) {
+    return this.materials.resetInventory(account);
+  }
+
+  @Post('admin/items/:id/quarantine/keep-a')
+  @Roles('ADMIN', 'OWNER')
+  keepA(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.materials.resolveQuarantineKeepA(account, id);
+  }
+
+  @Post('admin/items/:id/quarantine/sync-b')
+  @Roles('ADMIN', 'OWNER')
+  syncB(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.materials.resolveQuarantineSyncB(account, id);
+  }
 }

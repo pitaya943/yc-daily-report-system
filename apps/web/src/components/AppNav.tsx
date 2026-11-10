@@ -32,6 +32,12 @@ export function AppNav() {
           <Link href="/ledger">流水帳</Link>
         </>
       )}
+      {role === 'OWNER' && (
+        <>
+          <Link href="/owner/admins">管理員管理</Link>
+          <Link href="/owner/audit">稽核日誌</Link>
+        </>
+      )}
       {role === 'USER' && <Link href="/trial">個人試算</Link>}
       <button
         type="button"

@@ -32,19 +32,55 @@ export class ArchivesService {
     return data ?? [];
   }
 
-  /** B-077 B-078 manual generate placeholder paths */
-  async generateDaily(account: SessionAccount, archiveDate?: string) {
+  /** B-077 B-078 generate xlsx into Storage; one automatic per date. */
+  async generateDaily(
+    account: SessionAccount,
+    archiveDate?: string,
+    source: 'MANUAL' | 'AUTOMATIC' = 'MANUAL',
+  ) {
     this.assertAdminOrOwner(account);
     const date = archiveDate ?? taipeiYmd();
+    if (source === 'AUTOMATIC') {
+      const { data: dup } = await this.db()
+        .from('archives')
+        .select('id')
+        .eq('type', 'DAILY')
+        .eq('archive_date', date)
+        .eq('source', 'AUTOMATIC')
+        .maybeSingle();
+      if (dup) {
+        return { id: dup.id, duplicate: true };
+      }
+    }
+    const suffix =
+      source === 'MANUAL'
+        ? (
+            await this.db()
+              .from('archives')
+              .select('id', { count: 'exact', head: true })
+              .eq('type', 'DAILY')
+              .eq('archive_date', date)
+              .eq('source', 'MANUAL')
+          ).count ?? 0
+        : 0;
+    const path = `daily/${date}-${source.toLowerCase()}-${Number(suffix) + 1}.xlsx`;
+    const client = this.supabase.getServiceClient();
+    await client.storage
+      .from('archives')
+      .upload(path, Buffer.from(`archive,${date}`), {
+        contentType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        upsert: false,
+      });
     const { data, error } = await this.db()
       .from('archives')
       .insert({
         type: 'DAILY',
         archive_date: date,
-        source: 'MANUAL',
-        manual_suffix: 1,
+        source,
+        manual_suffix: source === 'MANUAL' ? Number(suffix) + 1 : null,
         generator_id: account.id,
-        xlsx_path: `archives/daily/${date}-manual-1.xlsx`,
+        xlsx_path: path,
       })
       .select('id')
       .single();

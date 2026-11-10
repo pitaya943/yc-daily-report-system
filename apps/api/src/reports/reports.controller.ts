@@ -88,6 +88,9 @@ export class ReportsController {
     body: {
       quantities: Array<{ itemCode: string; qty: number }>;
       collaboratorIds?: string[];
+      customItemName?: string | null;
+      customItemQty?: number | null;
+      customItemUnitPrice?: number | null;
     },
   ) {
     return this.reports.updateReport(account, id, body);

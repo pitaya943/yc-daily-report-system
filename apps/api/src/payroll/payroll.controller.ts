@@ -38,4 +38,12 @@ export class PayrollController {
   ) {
     return this.payroll.getRun(account, id);
   }
+
+  @Get('runs/:id/export')
+  exportRun(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.payroll.exportRun(account, id);
+  }
 }

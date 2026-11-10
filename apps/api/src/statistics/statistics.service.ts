@@ -3,12 +3,14 @@ import { unitsToQty } from '@yc/allocation';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
+import { ExportService } from '../export/export.service';
 
 @Injectable()
 export class StatisticsService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly audit: AuditService,
+    private readonly exports: ExportService,
   ) {}
 
   private db() {
@@ -80,6 +82,32 @@ export class StatisticsService {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
       throw new ForbiddenException();
     }
+    const { data: shares } = await this.db()
+      .from('report_shares')
+      .select('account_id, share_units, item_code, report_id');
+    const { data: reports } = await this.db()
+      .from('daily_reports')
+      .select('id, report_date, status')
+      .eq('status', 'CONFIRMED')
+      .gte('report_date', body.startDate)
+      .lte('report_date', body.endDate);
+    const allowed = new Set((reports ?? []).map((r) => r.id));
+    const totals = new Map<string, number>();
+    for (const s of shares ?? []) {
+      if (!allowed.has(s.report_id as string)) continue;
+      const id = s.account_id as string;
+      totals.set(id, (totals.get(id) ?? 0) + Number(s.share_units));
+    }
+    const { data: accounts } = await this.db()
+      .from('accounts')
+      .select('id, display_name');
+    const rows =
+      accounts?.map((a) => ({
+        displayName: a.display_name,
+        qty: (totals.get(a.id as string) ?? 0) / 10,
+        amount: 0,
+      })) ?? [];
+    const buffer = await this.exports.buildSummaryXlsx(rows);
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
@@ -88,9 +116,7 @@ export class StatisticsService {
     });
     return {
       format: 'xlsx',
-      startDate: body.startDate,
-      endDate: body.endDate,
-      message: '匯出已記錄（S4 占位檔案）',
+      base64: buffer.toString('base64'),
     };
   }
 }

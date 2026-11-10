@@ -6,6 +6,7 @@ export type AppConfig = {
   sessionSecret: string;
   sessionIdleMinutes: number;
   webOrigin: string;
+  bankEncryptionKeyBase64?: string;
 };
 
 export function loadConfig(): AppConfig {
@@ -28,5 +29,6 @@ export function loadConfig(): AppConfig {
     ),
     sessionIdleMinutes: parseInt(process.env.SESSION_IDLE_MINUTES ?? '30', 10),
     webOrigin: process.env.WEB_ORIGIN ?? 'http://127.0.0.1:3000',
+    bankEncryptionKeyBase64: process.env.BANK_ENCRYPTION_KEY_BASE64,
   };
 }

@@ -19,8 +19,12 @@ export class ArchivesController {
   @Post('daily')
   generateDaily(
     @CurrentAccount() account: SessionAccount,
-    @Body() body: { archiveDate?: string },
+    @Body() body: { archiveDate?: string; source?: 'MANUAL' | 'AUTOMATIC' },
   ) {
-    return this.archives.generateDaily(account, body.archiveDate);
+    return this.archives.generateDaily(
+      account,
+      body.archiveDate,
+      body.source ?? 'MANUAL',
+    );
   }
 }

@@ -166,4 +166,63 @@ export class LedgerService {
     });
     return { url: signed.signedUrl, expiresIn: 3600 };
   }
+
+  /** B-085 upload evidence — permanent storage, one current file per entry. */
+  async uploadEvidence(
+    account: SessionAccount,
+    entryId: string,
+    file: { buffer: Buffer; originalname: string; mimetype: string; size: number },
+  ) {
+    this.assertAdminOrOwner(account);
+    const allowed = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
+    if (!allowed.includes(file.mimetype)) {
+      throw new BadRequestException('不支援的檔案格式');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('檔案超過 10MB');
+    }
+    const path = `${entryId}/${Date.now()}-${file.originalname}`;
+    const client = this.supabase.getServiceClient();
+    const { error: upErr } = await client.storage
+      .from('ledger-evidence')
+      .upload(path, file.buffer, { contentType: file.mimetype, upsert: false });
+    if (upErr) throw new BadRequestException(upErr.message);
+
+    await this.db()
+      .from('ledger_evidence_files')
+      .update({ is_current: false })
+      .eq('entry_id', entryId)
+      .eq('is_current', true);
+
+    const { count } = await this.db()
+      .from('ledger_evidence_files')
+      .select('id', { count: 'exact', head: true })
+      .eq('entry_id', entryId);
+    const version = (count ?? 0) + 1;
+
+    await this.db().from('ledger_evidence_files').insert({
+      entry_id: entryId,
+      storage_bucket: 'ledger-evidence',
+      storage_path: path,
+      original_filename: file.originalname,
+      mime_type: file.mimetype,
+      size_bytes: file.size,
+      version,
+      is_current: true,
+      created_by: account.id,
+    });
+
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'LEDGER_UPDATE',
+      description: `上傳流水帳證據 ${entryId} v${version}`,
+    });
+    return { ok: true, version };
+  }
 }

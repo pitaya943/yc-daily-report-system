@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,8 +7,11 @@ import {
   Param,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentAccount } from '../common/current-account.decorator';
@@ -68,5 +72,16 @@ export class LedgerController {
     @Param('id') id: string,
   ) {
     return this.ledger.openEvidence(account, id);
+  }
+
+  @Post('entries/:id/evidence')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadEvidence(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('請上傳檔案');
+    return this.ledger.uploadEvidence(account, id, file);
   }
 }

@@ -9,6 +9,8 @@ import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import {
   ValidationMessages,
+  assertMaterialRequestable,
+  stockColourHint,
   validateMaterialRequestQty,
 } from '@yc/validation';
 
@@ -42,7 +44,20 @@ export class MaterialsService {
     }
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return { tabs: tabs ?? {}, items: data ?? [] };
+    const { data: settings } = await this.db()
+      .from('system_settings')
+      .select('inventory_comparison_label')
+      .eq('id', 1)
+      .single();
+    const items = (data ?? []).map((row) => ({
+      ...row,
+      stockColour: stockColourHint(Number(row.remaining_qty)),
+    }));
+    return {
+      tabs: tabs ?? {},
+      items,
+      comparisonLabel: settings?.inventory_comparison_label ?? null,
+    };
   }
 
   /** B-065 USER request */
@@ -62,8 +77,13 @@ export class MaterialsService {
       .eq('id', body.materialId)
       .single();
     if (error || !mat) throw new NotFoundException();
-    if (mat.hidden || mat.quarantined) {
-      throw new BadRequestException(ValidationMessages.materialNotRequestable);
+    const requestableErr = assertMaterialRequestable({
+      remaining_qty: Number(mat.remaining_qty),
+      hidden: mat.hidden,
+      quarantined: mat.quarantined,
+    });
+    if (requestableErr) {
+      throw new BadRequestException(requestableErr.message);
     }
     if (Number(mat.remaining_qty) < body.quantity) {
       throw new BadRequestException(ValidationMessages.materialInsufficient);
@@ -317,6 +337,151 @@ export class MaterialsService {
       actorDisplayName: account.displayName,
       actionType: 'MATERIAL_DELETE',
       description: `刪除材料 ${id}`,
+    });
+    return { ok: true };
+  }
+
+  /** B-054 B-066 CSV import with quarantine on mismatch. */
+  async importInventory(
+    account: SessionAccount,
+    fileName: string,
+    csvText: string,
+  ) {
+    if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
+      throw new ForbiddenException();
+    }
+    const lines = csvText.split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) {
+      throw new BadRequestException(ValidationMessages.importFileInvalid);
+    }
+    const header = lines[0].split(',').map((h) => h.trim());
+    const codeIdx = header.indexOf('材料編號');
+    const recvIdx = header.indexOf('實領量');
+    if (codeIdx < 0 || recvIdx < 0) {
+      throw new BadRequestException(ValidationMessages.importFileInvalid);
+    }
+    const fileRows = new Map<string, number>();
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',');
+      const code = cols[codeIdx]?.trim();
+      const qty = Number(cols[recvIdx]);
+      if (code && !Number.isNaN(qty)) fileRows.set(code, qty);
+    }
+    const { data: materials } = await this.db()
+      .from('materials')
+      .select('id, code, received_qty, cumulative_usage, remaining_qty');
+    let mismatches = 0;
+    for (const m of materials ?? []) {
+      if (!m.code) continue;
+      const bQty = fileRows.get(m.code as string);
+      if (bQty === undefined) continue;
+      const aQty = Number(m.received_qty);
+      if (Math.abs(aQty - bQty) > 0.001) {
+        mismatches++;
+        await this.db()
+          .from('materials')
+          .update({
+            quarantined: true,
+            quarantine_note: `A=${aQty} B=${bQty}`,
+          })
+          .eq('id', m.id);
+      }
+    }
+  const label = `已對比：${fileName.replace(/\.(csv|xlsx)$/i, '')}`;
+    await this.db()
+      .from('system_settings')
+      .update({ inventory_comparison_label: label })
+      .eq('id', 1);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'MATERIAL_IMPORT',
+      description: `庫存匯入 ${fileName}（暫存 ${mismatches} 筆）`,
+    });
+    return { mismatches, comparisonLabel: label };
+  }
+
+  /** B-055 keep system values (A). */
+  async resolveQuarantineKeepA(account: SessionAccount, materialId: string) {
+    await this.clearQuarantine(account, materialId, 'MATERIAL_KEEP_A', '保留系統值 A');
+  }
+
+  /** B-055 sync to uploaded file (B). */
+  async resolveQuarantineSyncB(account: SessionAccount, materialId: string) {
+    const { data: mat } = await this.db()
+      .from('materials')
+      .select('id, quarantine_note, cumulative_usage')
+      .eq('id', materialId)
+      .single();
+    if (!mat?.quarantine_note) throw new NotFoundException();
+    const m = /B=([0-9.]+)/.exec(mat.quarantine_note as string);
+    const bQty = m ? Number(m[1]) : 0;
+    const cumulative = Number(mat.cumulative_usage);
+    const remaining = Math.max(0, bQty - cumulative);
+    await this.db()
+      .from('materials')
+      .update({
+        received_qty: bQty,
+        remaining_qty: remaining,
+        quarantined: false,
+        quarantine_note: null,
+      })
+      .eq('id', materialId);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'MATERIAL_SYNC_B',
+      description: `暫存材料 ${materialId} 採用匯入值 B`,
+    });
+    return { ok: true };
+  }
+
+  private async clearQuarantine(
+    account: SessionAccount,
+    materialId: string,
+    action: 'MATERIAL_KEEP_A' | 'MATERIAL_SYNC_B',
+    desc: string,
+  ) {
+    if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
+      throw new ForbiddenException();
+    }
+    await this.db()
+      .from('materials')
+      .update({ quarantined: false, quarantine_note: null })
+      .eq('id', materialId);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: action,
+      description: desc + ` ${materialId}`,
+    });
+    return { ok: true };
+  }
+
+  /** B-036 reset catalogue quantities to 0 and clear comparison label. */
+  async resetInventory(account: SessionAccount) {
+    if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
+      throw new ForbiddenException();
+    }
+    await this.db()
+      .from('materials')
+      .update({
+        remaining_qty: 0,
+        received_qty: 0,
+        cumulative_usage: 0,
+        quarantined: false,
+        quarantine_note: null,
+      })
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+    await this.db()
+      .from('system_settings')
+      .update({ inventory_comparison_label: null })
+      .eq('id', 1);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'MATERIAL_RESET',
+      description: '重置材料庫存為 0',
     });
     return { ok: true };
   }

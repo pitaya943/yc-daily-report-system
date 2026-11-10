@@ -24,4 +24,12 @@ export const ValidationMessages = {
   collaboratorLimit:
     '共同作業者最多 6 人，且須為同一區域、同一類型的啟用員工',
   confirmedReportNoEdit: '已核准回報僅可預覽',
+  bankDigitsInvalid: '銀行帳號須為 14 位數字',
+  bankEncryptionUnavailable:
+    '銀行帳號加密金鑰未設定，無法讀寫完整銀行帳號',
+  customItemNameMax: '自訂工項名稱最多 100 個字',
+  customItemQty: '自訂工項數量須為 0 到 999.9，最小單位 0.1',
+  customItemPrice: '自訂工項單價須為 0 或正整數',
+  importFileInvalid:
+    '請上傳 xlsx 或 csv 檔，且標題列須含「材料編號」與「實領量」',
 } as const;
