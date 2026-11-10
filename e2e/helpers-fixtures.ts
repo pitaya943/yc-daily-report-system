@@ -31,7 +31,7 @@ export async function resetMaterialInventory(
 ): Promise<void> {
   await withPg(async (client) => {
     await client.query(
-      `UPDATE public.materials SET remaining_qty = $2, received_qty = $3, cumulative_usage = $3 - $2 WHERE id = $1`,
+      `UPDATE public.materials SET remaining_qty = $2::numeric, received_qty = $3::numeric, cumulative_usage = ($3::numeric - $2::numeric) WHERE id = $1::uuid`,
       [materialId, remaining, received],
     );
   });
