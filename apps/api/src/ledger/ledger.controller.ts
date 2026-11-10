@@ -92,4 +92,12 @@ export class LedgerController {
   ) {
     return this.ledger.settleEntry(account, id);
   }
+
+  @Get('export')
+  exportLedger(
+    @CurrentAccount() account: SessionAccount,
+    @Query('to') to?: string,
+  ) {
+    return this.ledger.exportEntries(account, to);
+  }
 }

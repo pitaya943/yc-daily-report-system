@@ -56,6 +56,15 @@ export class ReportsController {
     return this.reports.listAdminHistory(account, { status });
   }
 
+  @Get('history/export')
+  @Roles('USER', 'ADMIN', 'OWNER')
+  exportHistory(
+    @CurrentAccount() account: SessionAccount,
+    @Query('status') status?: string,
+  ) {
+    return this.reports.exportHistory(account, { status });
+  }
+
   @Post()
   @Roles('USER')
   create(

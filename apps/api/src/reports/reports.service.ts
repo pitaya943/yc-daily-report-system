@@ -15,6 +15,7 @@ import {
   validateReportDate,
 } from '@yc/validation';
 import { taipeiYmd } from '../common/taipei-time';
+import { ExportService } from '../export/export.service';
 
 type PriceSet = 'WEST' | 'SOUTH' | 'BIG_METER';
 
@@ -23,6 +24,7 @@ export class ReportsService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly audit: AuditService,
+    private readonly exports: ExportService,
   ) {}
 
   private db() {
@@ -556,5 +558,37 @@ export class ReportsService {
       .order('display_name');
     if (error) throw new Error(error.message);
     return data ?? [];
+  }
+
+  /** B-063 history Excel export */
+  async exportHistory(account: SessionAccount, query?: { status?: string }) {
+    const rows =
+      account.role === 'USER'
+        ? await this.listHistory(account, query)
+        : await this.listAdminHistory(account, query);
+    const { data: names } = await this.db()
+      .from('accounts')
+      .select('id, display_name');
+    const nameMap = new Map(
+      (names ?? []).map((n) => [n.id as string, n.display_name as string]),
+    );
+    const exportRows = rows.map((r: { report_date: string; submitter_id: string; status: string }) => ({
+      reportDate: r.report_date,
+      submitter: nameMap.get(r.submitter_id) ?? r.submitter_id,
+      status: r.status,
+    }));
+    const buffer = await this.exports.buildHistoryXlsx(exportRows);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'EXPORT',
+      description: '匯出歷史 Excel',
+    });
+    return {
+      fileName: 'history.xlsx',
+      mimeType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64: buffer.toString('base64'),
+    };
   }
 }

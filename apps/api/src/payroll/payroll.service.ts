@@ -3,12 +3,17 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { buildPayrollRow, ytdWithOffset } from '@yc/payroll';
+import {
+  buildPayrollRow,
+  greedyCashBreakdown,
+  ytdWithOffset,
+} from '@yc/payroll';
 import { unitsToQty } from '@yc/allocation';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { ExportService } from '../export/export.service';
+import { BankService } from '../bank/bank.service';
 
 const PAYROLL_BLOCK_MSG = '單價尚未設定完整，無法計算薪資，請先補齊單價';
 
@@ -20,6 +25,7 @@ export class PayrollService {
     private readonly supabase: SupabaseService,
     private readonly audit: AuditService,
     private readonly exports: ExportService,
+    private readonly bank: BankService,
   ) {}
 
   private db() {
@@ -303,7 +309,24 @@ export class PayrollService {
       description: `計薪 ${startDate}～${endDate}，${rows.length} 人`,
     });
 
-    return { runId: run.id, rowCount: rows.length, capNtdUsed: annualCap };
+    let cashTotal = 0;
+    let transferTotal = 0;
+    for (const r of rows as Array<{
+      final_pay: number;
+      payment_method: string;
+    }>) {
+      const fp = Number(r.final_pay ?? 0);
+      if (fp <= 0) continue;
+      if (r.payment_method === 'CASH') cashTotal += fp;
+      else if (r.payment_method === 'TRANSFER') transferTotal += fp;
+    }
+    const denominations = greedyCashBreakdown(cashTotal);
+    return {
+      runId: run.id,
+      rowCount: rows.length,
+      capNtdUsed: annualCap,
+      totals: { cashTotal, transferTotal, denominations },
+    };
   }
 
   async listRuns(account: SessionAccount) {
@@ -334,24 +357,71 @@ export class PayrollService {
   }
 
   /** B-072 B-084 xlsx export for calculated run. */
-  async exportRun(account: SessionAccount, runId: string) {
+  async exportRun(
+    account: SessionAccount,
+    runId: string,
+    format: 'xlsx' | 'pdf' | 'docx' = 'xlsx',
+  ) {
     const detail = await this.getRun(account, runId);
-    const buffer = await this.exports.buildPayrollXlsx({
+    const rowList = detail.rows as Array<Record<string, unknown>>;
+    const base = {
       startDate: detail.run.start_date as string,
       endDate: detail.run.end_date as string,
-      rows: detail.rows as Array<Record<string, unknown>>,
-    });
+      rows: rowList,
+    };
+    let buffer: Buffer;
+    let fileName: string;
+    let mimeType: string;
+    if (format === 'pdf') {
+      buffer = await this.exports.buildPayrollPdf(base);
+      fileName = `payroll-${runId}.pdf`;
+      mimeType = 'application/pdf';
+    } else if (format === 'docx') {
+      const accountIds = [
+        ...new Set(rowList.map((r) => r.account_id as string)),
+      ];
+      const { data: accts } = await this.db()
+        .from('accounts')
+        .select('id, bank_account_ciphertext')
+        .in('id', accountIds);
+      const cipherMap = new Map(
+        (accts ?? []).map((a) => [a.id as string, a.bank_account_ciphertext]),
+      );
+      const withBank = rowList.map((r) => {
+        let bank_account_full: string | null = null;
+        if (
+          r.payment_method === 'TRANSFER' &&
+          Number(r.final_pay ?? 0) > 0
+        ) {
+          try {
+            const ct = cipherMap.get(r.account_id as string);
+            bank_account_full = this.bank.decryptFromStorage(
+              ct as Buffer | null,
+            );
+          } catch {
+            throw new BadRequestException(
+              '無法讀取銀行帳號，薪轉單匯出已中止',
+            );
+          }
+        }
+        return { ...r, bank_account_full };
+      });
+      buffer = await this.exports.buildTransferDocx(withBank);
+      fileName = `payroll-transfer-${runId}.docx`;
+      mimeType =
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    } else {
+      buffer = await this.exports.buildPayrollXlsx(base);
+      fileName = `payroll-${runId}.xlsx`;
+      mimeType =
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
       actionType: 'EXPORT',
-      description: `匯出薪資 Excel run=${runId}`,
+      description: `匯出薪資 ${format} run=${runId}`,
     });
-    return {
-      fileName: `payroll-${runId}.xlsx`,
-      mimeType:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      base64: buffer.toString('base64'),
-    };
+    return { fileName, mimeType, base64: buffer.toString('base64') };
   }
 }

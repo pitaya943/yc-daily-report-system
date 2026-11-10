@@ -11,9 +11,9 @@ CI enforces B-001–B-050 via `scripts/check-b-rule-coverage.mjs`; B-051–B-098
 | B-001 | `apps/api/test/integration/s6a_B001_B004.spec.ts` | s6a_B001_B004.spec.ts; B-001 system purpose smoke; B-001 system purpose smoke → health and authenticated report catalogue … |
 | B-002 | `apps/api/test/integration/s6a_B001_B004.spec.ts` | B-002 design capacity; B-002 design capacity → daily_reports table supports list query … |
 | B-003 | `apps/api/test/integration/s6a_B001_B004.spec.ts` | B-003 exactly one OWNER; B-003 exactly one OWNER → seed has single owner row … |
-| B-004 | `apps/api/test/integration/s6a_B001_B004.spec.ts` | s6a_B001_B004.spec.ts; B-004 forbidden USER on admin route; B-004 forbidden USER on admin route → USER cannot list admin history … |
+| B-004 | `apps/api/test/integration/s6a_B001_B004.spec.ts; e2e/permission-matrix_B004.spec.ts` | s6a_B001_B004.spec.ts; B-004 forbidden USER on admin route; B-004 forbidden USER on admin route → USER cannot list admin history; permission-matrix_B004.spec.ts → B-004 B-006 permission matrix server checks … |
 | B-005 | `e2e/b-005_B005-landing.spec.ts; e2e/bdd-006-daily-cap.spec.ts` | b-005_B005-landing.spec.ts → B-005 USER lands on report after login; b-005_B005-landing.spec.ts → B-005 ADMIN lands on confirmation; bdd-006-daily-cap.spec.ts → B-005 USER lands on 日報 after login |
-| B-006 | `apps/api/src/auth/guards/roles.guard.spec.ts` | B-006 B-096 RolesGuard; B-006 B-096 RolesGuard → allows OWNER for owner-only roles; B-006 B-096 RolesGuard → denies ADMIN for owner-only roles and logs ACCESS_DENIED … |
+| B-006 | `apps/api/src/auth/guards/roles.guard.spec.ts; e2e/permission-matrix_B004.spec.ts` | B-006 B-096 RolesGuard; B-006 B-096 RolesGuard → allows OWNER for owner-only roles; B-006 B-096 RolesGuard → denies ADMIN for owner-only roles and logs ACCESS_DENIED; permission-matrix_B004.spec.ts → B-004 B-006 permission matrix server checks … |
 | B-007 | `apps/api/test/integration/s6a_B007_B012.spec.ts` | s6a_B007_B012.spec.ts; B-007 unique display name; B-007 unique display name → rejects duplicate admin create … |
 | B-008 | `apps/api/test/integration/s6a_B007_B012.spec.ts` | B-008 password change; B-008 password change → requires current password … |
 | B-009 | `apps/api/test/integration/s6a_B007_B012.spec.ts` | B-009 admin creates USER only; B-009 admin creates USER only → admin cannot assign ADMIN via accounts/users … |
@@ -58,54 +58,54 @@ CI enforces B-001–B-050 via `scripts/check-b-rule-coverage.mjs`; B-051–B-098
 | B-048 | `packages/payroll/src/retention-cap_B046_B048.spec.ts` | B-048 new calendar year ytd starts at zero; B-048 new calendar year ytd starts at zero → ytd before is per-year input … |
 | B-049 | `packages/payroll/src/money_B049_B050.spec.ts` | B-049 half-up rounding; B-049 half-up rounding → rounds 2.5 up to 3 … |
 | B-050 | `packages/payroll/src/money_B049_B050.spec.ts` | B-050 uninsured on work-item gross only; B-050 uninsured on work-item gross only → 3% of gross excluding fixed salary path … |
-| B-051 | — | *(no test yet — S6b)* |
+| B-051 | `apps/api/test/integration/s6b_rules.spec.ts; packages/payroll/src/hide-rows_B051.spec.ts` | s6b_rules.spec.ts; B-051 hides zero gross and final; B-051 hides zero gross and final → B-051 payroll rowCount excludes idle users; B-051 payroll hide zero-zero rows … |
 | B-052 | `apps/api/test/integration/payroll_B052.spec.ts; packages/payroll/src/examples-B052.spec.ts` | payroll_B052.spec.ts; examples-B052.spec.ts; B-052 worked examples; B-052 worked examples → example A: gross 1200, retention 200, uninsured 3% … |
-| B-053 | — | *(no test yet — S6b)* |
+| B-053 | `apps/api/test/integration/s6b_rules.spec.ts; packages/payroll/src/cash-denominations_B053.spec.ts` | B-053 denominations on calculate; B-053 denominations on calculate → B-053 returns denomination map; B-053 cash denomination breakdown; B-053 cash denomination breakdown → B-053 greedy counts for 1236 NTD … |
 | B-054 | `apps/api/test/integration/material-import_B066.spec.ts` | material-import_B066.spec.ts |
-| B-055 | — | *(no test yet — S6b)* |
+| B-055 | `apps/api/test/integration/s6b_rules.spec.ts` | B-055 quarantine resolve; B-055 quarantine resolve → B-055 trust A clears quarantine … |
 | B-056 | `apps/api/test/integration/material-approve_B056.spec.ts` | material-approve_B056.spec.ts |
 | B-057 | `packages/validation/src/material-stock_B057.spec.ts` | B-057 stock colours and request refusal; B-057 stock colours and request refusal → colour thresholds; B-057 stock colours and request refusal → server refuses zero or quarantined … |
-| B-058 | — | *(no test yet — S6b)* |
-| B-059 | — | *(no test yet — S6b)* |
-| B-060 | `e2e/login-smoke_B060.spec.ts` | login-smoke_B060.spec.ts → B-060 login page loads |
-| B-061 | — | *(no test yet — S6b)* |
-| B-062 | — | *(no test yet — S6b)* |
-| B-063 | — | *(no test yet — S6b)* |
+| B-058 | `packages/validation/src/format_B058.spec.ts` | B-058 quantity and money display; B-058 quantity and money display → B-058 work qty shows integer without decimal; B-058 quantity and money display → B-058 money uses grouping; B-058 quantity and money display → B-058 material qty trims trailing zeros … |
+| B-059 | `apps/api/test/integration/s6b_rules.spec.ts; e2e/payroll-shortcuts_B059.spec.ts` | B-059 B-060 auth sign-in names; B-059 B-060 auth sign-in names → B-060 west type lists 種子西區; B-059 B-060 auth sign-in names → B-060 admin type lists owner PROVISIONAL Q-052; payroll-shortcuts_B059.spec.ts → B-059 payday shortcut fills dates … |
+| B-060 | `apps/api/test/integration/s6b_rules.spec.ts; e2e/login-smoke_B060.spec.ts; e2e/login_B060.spec.ts` | B-059 B-060 auth sign-in names; B-059 B-060 auth sign-in names → B-060 west type lists 種子西區; B-059 B-060 auth sign-in names → B-060 admin type lists owner PROVISIONAL Q-052; login-smoke_B060.spec.ts → B-060 login page loads … |
+| B-061 | `apps/api/src/main_B079.spec.ts; apps/api/test/integration/s6b_rules.spec.ts` | B-079 B-061 session safety; B-079 B-061 session safety → B-079 production rejects E2E_TESTS; B-061 sign-out; B-061 sign-out → B-061 sign-out clears session … |
+| B-062 | `apps/api/test/integration/s6b_rules.spec.ts` | B-062 submit daily report; B-062 submit daily report → B-062 USER creates report … |
+| B-063 | `apps/api/test/integration/s6b_rules.spec.ts` | B-063 history export; B-063 history export → B-063 export returns xlsx PK header … |
 | B-064 | `apps/api/test/integration/report-edit_B064.spec.ts` | report-edit_B064.spec.ts |
 | B-065 | `packages/validation/src/report-validators.spec.ts` | B-065 B-088 validateMaterialRequestQty; B-065 B-088 validateMaterialRequestQty → rejects 0 and 100 … |
 | B-066 | `apps/api/test/integration/material-import_B066.spec.ts; apps/api/test/integration/s6a_B022_B031.spec.ts` | material-import_B066.spec.ts; B-036 B-066 xlsx import; B-036 B-066 xlsx import → accepts xlsx with required headers … |
 | B-067 | `apps/api/test/integration/rls-audit_B067.spec.ts` | rls-audit_B067.spec.ts |
-| B-068 | — | *(no test yet — S6b)* |
-| B-069 | — | *(no test yet — S6b)* |
-| B-070 | — | *(no test yet — S6b)* |
-| B-071 | — | *(no test yet — S6b)* |
+| B-068 | `apps/api/test/integration/s6b_rules.spec.ts` | B-068 personal trial; B-068 personal trial → B-068 trial returns gross and 10th flag … |
+| B-069 | `apps/api/test/integration/s6b_rules.spec.ts` | B-069 confirmation; B-069 confirmation → B-069 lists pending ordinary reports … |
+| B-070 | `apps/api/test/integration/s6b_rules.spec.ts` | B-070 B-071 review surfaces; B-070 B-071 review surfaces → B-071 big-meter pending endpoint; B-070 B-071 review surfaces → B-070 materials pending for admin … |
+| B-071 | `apps/api/test/integration/s6b_rules.spec.ts` | B-070 B-071 review surfaces; B-070 B-071 review surfaces → B-071 big-meter pending endpoint; B-070 B-071 review surfaces → B-070 materials pending for admin … |
 | B-072 | `apps/api/test/integration/payroll_B052.spec.ts` | payroll_B052.spec.ts |
-| B-073 | — | *(no test yet — S6b)* |
+| B-073 | `apps/api/test/integration/s6b_rules.spec.ts` | B-073 summary export; B-073 summary export → B-073 summary xlsx … |
 | B-074 | `apps/api/test/integration/accounts_B074.spec.ts` | accounts_B074.spec.ts |
-| B-075 | — | *(no test yet — S6b)* |
+| B-075 | `apps/api/test/integration/s6b_rules.spec.ts` | B-075 settings save; B-075 settings save → B-075 patch west direct_13 price … |
 | B-076 | `apps/api/test/integration/ledger_B076.spec.ts` | ledger_B076.spec.ts |
-| B-077 | `apps/api/test/integration/archives_B077_B078.spec.ts` | archives_B077_B078.spec.ts |
+| B-077 | `apps/api/test/integration/archives_B077_B078.spec.ts; apps/api/test/integration/s6b_rules.spec.ts` | archives_B077_B078.spec.ts; B-077 archive workbook; B-077 archive workbook → B-077 generates real xlsx archive … |
 | B-078 | `apps/api/test/integration/archives_B077_B078.spec.ts` | archives_B077_B078.spec.ts |
-| B-079 | — | *(no test yet — S6b)* |
+| B-079 | `apps/api/src/main_B079.spec.ts; apps/api/test/integration/s6b_rules.spec.ts` | B-079 B-061 session safety; B-079 B-061 session safety → B-079 production rejects E2E_TESTS; B-079 session endpoint; B-079 session endpoint → B-079 session cookie after sign-in … |
 | B-080 | `apps/api/test/integration/signin-rate-limit_B080.spec.ts` | signin-rate-limit_B080.spec.ts |
 | B-081 | `apps/api/src/bank/bank.service_B081.spec.ts; apps/api/test/integration/bank-crypto_B081.spec.ts; packages/bank-crypto/src/bank-crypto_B081.spec.ts` | B-081 fail closed without key; B-081 fail closed without key → requireKey throws when env unset; bank-crypto_B081.spec.ts; B-081 bank encryption at rest … |
-| B-082 | — | *(no test yet — S6b)* |
-| B-083 | — | *(no test yet — S6b)* |
-| B-084 | — | *(no test yet — S6b)* |
-| B-085 | — | *(no test yet — S6b)* |
-| B-086 | — | *(no test yet — S6b)* |
-| B-087 | — | *(no test yet — S6b)* |
+| B-082 | `apps/api/test/integration/s6b_rules.spec.ts` | B-082 financial visibility; B-082 financial visibility → B-082 USER cannot reveal another bank … |
+| B-083 | `apps/api/test/integration/s6b_rules.spec.ts` | B-083 audit completeness; B-083 audit completeness → B-083 export writes EXPORT audit … |
+| B-084 | `apps/api/src/export/export_B084.spec.ts; apps/api/test/integration/s6b_rules.spec.ts` | B-084 export formats; B-084 export formats → B-084 payroll xlsx is OOXML zip; B-084 export formats → B-084 payroll pdf starts with %PDF; B-084 export formats → B-084 transfer docx includes 板信 … |
+| B-085 | `apps/api/test/integration/s6b_rules.spec.ts` | B-085 B-098 ledger evidence; B-085 B-098 ledger evidence → B-098 delete blocked after evidence upload; B-085 B-098 ledger evidence → B-085 evidence URL expiresIn 3600 … |
+| B-086 | `e2e/ui-behaviour_B086.spec.ts` | ui-behaviour_B086.spec.ts → B-086 payroll page avoids full-page export overlay marker |
+| B-087 | `apps/api/test/integration/s6b_rules.spec.ts` | B-087 authorization; B-087 authorization → B-087 USER forbidden on payroll calculate … |
 | B-088 | `apps/api/src/bootstrap-env_B088.spec.ts; apps/api/src/write-routes_B088.spec.ts; packages/validation/src/report-validators.spec.ts; packages/validation/src/validators.spec.ts` | B-088 E2E_TESTS forbidden in production; B-088 E2E_TESTS forbidden in production → refuses production + E2E_TESTS; B-088 write routes have validators; B-088 write routes have validators → enumerates all write routes with validator ids … |
 | B-089 | `apps/api/test/integration/auth-lockout_B089.spec.ts` | auth-lockout_B089.spec.ts |
-| B-090 | — | *(no test yet — S6b)* |
+| B-090 | `apps/api/test/integration/s6b_rules.spec.ts` | B-090 year-end; B-090 year-end → B-090 year-end settlement endpoint … |
 | B-091 | `apps/api/test/integration/confirm_B091_BDD001.spec.ts` | confirm_B091_BDD001.spec.ts |
-| B-092 | — | *(no test yet — S6b)* |
-| B-093 | — | *(no test yet — S6b)* |
-| B-094 | — | *(no test yet — S6b)* |
-| B-095 | — | *(no test yet — S6b)* |
+| B-092 | `apps/api/test/integration/s6b_rules.spec.ts` | B-092 uninsured override; B-092 uninsured override → B-092 owner sets override … |
+| B-093 | `apps/api/test/integration/s6b_rules.spec.ts` | B-093 bank reveal; B-093 bank reveal → B-093 admin reveal logs BANK_REVEAL … |
+| B-094 | `apps/api/test/integration/s6b_rules.spec.ts` | B-094 incomplete prices; B-094 incomplete prices → B-094 blocks when unit price removed … |
+| B-095 | `apps/api/test/integration/s6b_rules.spec.ts; e2e/removed-behaviours_B095.spec.ts` | B-095 removed delete; B-095 removed delete → B-095 no permanent account delete route; removed-behaviours_B095.spec.ts → B-095 no permanent account delete API … |
 | B-096 | `apps/api/src/auth/guards/roles.guard.spec.ts; apps/api/test/integration/accounts_B074.spec.ts; apps/api/test/integration/authz-admin_B096.spec.ts` | B-006 B-096 RolesGuard; B-006 B-096 RolesGuard → allows OWNER for owner-only roles; B-006 B-096 RolesGuard → denies ADMIN for owner-only roles and logs ACCESS_DENIED; accounts_B074.spec.ts … |
-| B-097 | `apps/api/test/integration/authz-admin_B096.spec.ts` | authz-admin_B096.spec.ts |
-| B-098 | — | *(no test yet — S6b)* |
+| B-097 | `apps/api/test/integration/authz-admin_B096.spec.ts; e2e/permission-matrix_B004.spec.ts` | authz-admin_B096.spec.ts; permission-matrix_B004.spec.ts → B-006 B-097 admin managing admin denied and logged |
+| B-098 | `apps/api/test/integration/s6b_rules.spec.ts` | s6b_rules.spec.ts; B-085 B-098 ledger evidence; B-085 B-098 ledger evidence → B-098 delete blocked after evidence upload; B-085 B-098 ledger evidence → B-085 evidence URL expiresIn 3600 … |
 
 ## BDD scenarios
 

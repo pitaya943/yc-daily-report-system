@@ -32,14 +32,15 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
-  async listSignInNames(signInType: 'admin' | 'employee'): Promise<string[]> {
+  async listSignInNames(
+    signInType: 'admin' | 'west' | 'south' | 'employee',
+  ): Promise<string[]> {
     const db = this.supabase.getServiceClient();
-    let query = db
+    const { data, error } = await db
       .from('accounts')
-      .select('display_name, role, archived_at, big_meter')
+      .select('display_name, role, archived_at, big_meter, zone')
       .is('archived_at', null)
       .order('display_name');
-    const { data, error } = await query;
     if (error) {
       throw new Error(error.message);
     }
@@ -48,6 +49,22 @@ export class AuthService {
       // PROVISIONAL(Q-052): owner listed under admin type
       return rows
         .filter((r) => r.role === 'ADMIN' || r.role === 'OWNER')
+        .map((r) => r.display_name as string);
+    }
+    if (signInType === 'west') {
+      return rows
+        .filter(
+          (r) =>
+            r.role === 'USER' && !r.big_meter && (r.zone as string) === 'WEST',
+        )
+        .map((r) => r.display_name as string);
+    }
+    if (signInType === 'south') {
+      return rows
+        .filter(
+          (r) =>
+            r.role === 'USER' && !r.big_meter && (r.zone as string) === 'SOUTH',
+        )
         .map((r) => r.display_name as string);
     }
     return rows

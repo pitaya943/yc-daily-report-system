@@ -3,12 +3,14 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { taipeiYmd } from '../common/taipei-time';
+import { ExportService } from '../export/export.service';
 
 @Injectable()
 export class ArchivesService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly audit: AuditService,
+    private readonly exports: ExportService,
   ) {}
 
   private db() {
@@ -63,15 +65,21 @@ export class ArchivesService {
               .eq('source', 'MANUAL')
           ).count ?? 0
         : 0;
+    const { count: reportCount } = await this.db()
+      .from('daily_reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('report_date', date);
+    const xlsx = await this.exports.buildArchiveWorkbook(
+      date,
+      reportCount ?? 0,
+    );
     const path = `daily/${date}-${source.toLowerCase()}-${Number(suffix) + 1}.xlsx`;
     const client = this.supabase.getServiceClient();
-    await client.storage
-      .from('archives')
-      .upload(path, Buffer.from(`archive,${date}`), {
-        contentType:
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        upsert: false,
-      });
+    await client.storage.from('archives').upload(path, xlsx, {
+      contentType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      upsert: false,
+    });
     const { data, error } = await this.db()
       .from('archives')
       .insert({

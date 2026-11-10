@@ -54,17 +54,7 @@ test('BDD-006 delete pending frees daily cap', async ({ request }) => {
 
 test('B-005 USER lands on 日報 after login', async ({ page }) => {
   await page.goto('/login');
-  await page.route('**/auth/sign-in-names?type=admin', async (route) => {
-    const res = await route.fetch();
-    const json = (await res.json()) as { names: string[] };
-    await route.fulfill({
-      response: res,
-      json: {
-        names: [...json.names, '種子西區'],
-      },
-    });
-  });
-  await page.reload();
+  await page.getByRole('button', { name: /西區/ }).click();
   await page.selectOption('select', { label: '種子西區' });
   await page.fill('input[type="password"]', SEED_PASSWORD);
   await page.getByRole('button', { name: '登入' }).click();

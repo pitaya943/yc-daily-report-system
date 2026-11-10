@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentAccount } from '../common/current-account.decorator';
@@ -43,7 +51,8 @@ export class PayrollController {
   exportRun(
     @CurrentAccount() account: SessionAccount,
     @Param('id') id: string,
+    @Query('format') format?: 'xlsx' | 'pdf' | 'docx',
   ) {
-    return this.payroll.exportRun(account, id);
+    return this.payroll.exportRun(account, id, format ?? 'xlsx');
   }
 }

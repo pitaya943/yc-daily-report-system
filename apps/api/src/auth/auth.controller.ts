@@ -18,10 +18,15 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Get('sign-in-names')
-  async signInNames(@Query('type') type: 'admin' | 'employee') {
-    const signInType = type === 'employee' ? 'employee' : 'admin';
+  async signInNames(
+    @Query('type') type?: 'admin' | 'west' | 'south' | 'employee',
+  ) {
+    const signInType =
+      type === 'west' || type === 'south' || type === 'employee'
+        ? type
+        : 'admin';
     const names = await this.auth.listSignInNames(signInType);
-    return { names };
+    return { names, type: signInType };
   }
 
   @Post('sign-in')

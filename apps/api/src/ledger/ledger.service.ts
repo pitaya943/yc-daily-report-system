@@ -8,12 +8,14 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { taipeiYmd } from '../common/taipei-time';
+import { ExportService } from '../export/export.service';
 
 @Injectable()
 export class LedgerService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly audit: AuditService,
+    private readonly exports: ExportService,
   ) {}
 
   private db() {
@@ -127,12 +129,16 @@ export class LedgerService {
   /** B-098 delete only when never had evidence */
   async deleteEntry(account: SessionAccount, entryId: string) {
     this.assertAdminOrOwner(account);
-    const { count } = await this.db()
-      .from('ledger_evidence_files')
-      .select('id', { count: 'exact', head: true })
-      .eq('entry_id', entryId);
-    if ((count ?? 0) > 0) {
+    const { data: row } = await this.db()
+      .from('ledger_entries')
+      .select('has_ever_had_evidence, voided_at')
+      .eq('id', entryId)
+      .single();
+    if (row?.has_ever_had_evidence) {
       throw new BadRequestException('此紀錄有證據檔案，不能刪除，只能作廢');
+    }
+    if (row?.voided_at) {
+      throw new BadRequestException('已作廢的紀錄不能刪除');
     }
     await this.db().from('ledger_entries').delete().eq('id', entryId);
     await this.audit.write({
@@ -208,6 +214,11 @@ export class LedgerService {
       .eq('entry_id', entryId);
     const version = (count ?? 0) + 1;
 
+    await this.db()
+      .from('ledger_entries')
+      .update({ has_ever_had_evidence: true })
+      .eq('id', entryId);
+
     await this.db().from('ledger_evidence_files').insert({
       entry_id: entryId,
       storage_bucket: 'ledger-evidence',
@@ -258,5 +269,30 @@ export class LedgerService {
       description: `沖銷流水帳 ${entryId}`,
     });
     return { ok: true };
+  }
+
+  /** B-084 ledger Excel with void marks PROVISIONAL(Q-061). */
+  async exportEntries(account: SessionAccount, to?: string) {
+    this.assertAdminOrOwner(account);
+    const end = to ?? taipeiYmd();
+    const { data, error } = await this.db()
+      .from('ledger_entries')
+      .select('entry_date, type, amount, description, voided_at')
+      .lte('entry_date', end)
+      .order('entry_date', { ascending: true });
+    if (error) throw new Error(error.message);
+    const buffer = await this.exports.buildLedgerXlsx(data ?? []);
+    await this.audit.write({
+      actorId: account.id,
+      actorDisplayName: account.displayName,
+      actionType: 'EXPORT',
+      description: `匯出流水帳 Excel`,
+    });
+    return {
+      fileName: `ledger-${end}.xlsx`,
+      mimeType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64: buffer.toString('base64'),
+    };
   }
 }
