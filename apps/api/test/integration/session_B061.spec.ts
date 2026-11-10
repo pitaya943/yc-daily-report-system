@@ -20,15 +20,15 @@ describeIntegration('B-061 idle session expiry', () => {
         displayName: '種子管理員',
         password: SEED_PASSWORD,
       });
-      const ok1 = await agent.get('/auth/session');
-      expect(ok1.body.signedIn).toBe(true);
-      await agent.get('/auth/session');
+      const ok1 = await agent.get('/reports/mine');
+      expect(ok1.status).toBeLessThan(300);
+      await agent.get('/reports/mine');
       await new Promise((r) => setTimeout(r, 1500));
-      const ok2 = await agent.get('/auth/session');
-      expect(ok2.body.signedIn).toBe(true);
-      await new Promise((r) => setTimeout(r, 2000));
-      const expired = await agent.get('/auth/session');
-      expect(expired.body.signedIn).toBe(false);
+      const ok2 = await agent.get('/reports/mine');
+      expect(ok2.status).toBeLessThan(300);
+      await new Promise((r) => setTimeout(r, 2500));
+      const expired = await agent.get('/reports/mine');
+      expect(expired.status).toBe(401);
     } finally {
       process.env.SESSION_IDLE_MINUTES = prev;
       await app.close();

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { test, expect } from '@playwright/test';
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
@@ -14,7 +15,10 @@ type MatrixRow = {
 
 const cases = (
   JSON.parse(
-    readFileSync('docs/design/permission-matrix-cases.json', 'utf8'),
+    readFileSync(
+      path.join(__dirname, '..', 'docs/design/permission-matrix-cases.json'),
+      'utf8',
+    ),
   ) as { cases: MatrixRow[] }
 ).cases;
 

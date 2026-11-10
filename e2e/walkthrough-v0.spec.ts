@@ -2,7 +2,10 @@ import { test, expect } from '@playwright/test';
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
-const EVIDENCE = 'docs/evidence/walkthrough';
+import path from 'node:path';
+
+const REPO = path.join(__dirname, '..');
+const EVIDENCE = path.join(REPO, 'docs/evidence/walkthrough');
 const ART = process.env.WALKTHROUGH_ART ?? '/opt/cursor/artifacts/yc-v0-walkthrough';
 
 mkdirSync(ART, { recursive: true });
