@@ -1,6 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { integrationEnabled, requireIntegration, SEED_PASSWORD } from './setup';
+import {
+  integrationEnabled,
+  requireIntegration,
+  resetOwnerLockout,
+  SEED_PASSWORD,
+} from './setup';
+import { SupabaseService } from '../../src/supabase/supabase.service';
 import { createTestApp } from './test-app';
 
 const describeIntegration = integrationEnabled() ? describe : describe.skip;
@@ -12,6 +18,8 @@ describeIntegration('B-096 B-097 admin cannot manage admin', () => {
   beforeAll(async () => {
     requireIntegration();
     app = await createTestApp();
+    const supabase = app.get(SupabaseService);
+    await resetOwnerLockout(supabase);
   });
 
   afterAll(async () => {

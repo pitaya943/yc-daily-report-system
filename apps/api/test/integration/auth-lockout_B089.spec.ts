@@ -2,7 +2,12 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { AuthService } from '../../src/auth/auth.service';
 import { SupabaseService } from '../../src/supabase/supabase.service';
-import { integrationEnabled, requireIntegration, SEED_PASSWORD } from './setup';
+import {
+  integrationEnabled,
+  requireIntegration,
+  resetOwnerLockout,
+  SEED_PASSWORD,
+} from './setup';
 import { ValidationMessages } from '@yc/validation';
 
 const describeIntegration = integrationEnabled() ? describe : describe.skip;
@@ -51,5 +56,11 @@ describeIntegration('B-089 sign-in lockout', () => {
         clientAddress: 'test-client-final',
       }),
     ).rejects.toThrow(ValidationMessages.lockout);
+  });
+
+  afterAll(async () => {
+    if (supabase) {
+      await resetOwnerLockout(supabase);
+    }
   });
 });

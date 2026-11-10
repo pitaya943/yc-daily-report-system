@@ -14,3 +14,22 @@ export function requireIntegration(): void {
 }
 
 export const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'seedpass01';
+
+/** Reset lockout counters between integration suites (B-089). */
+export async function resetOwnerLockout(supabase: {
+  getServiceClient: () => {
+    from: (t: string) => {
+      update: (v: object) => { eq: (c: string, v: string) => Promise<unknown> };
+    };
+  };
+}): Promise<void> {
+  const db = supabase.getServiceClient();
+  await db
+    .from('accounts')
+    .update({
+      failed_signin_count: 0,
+      lockout_until: null,
+      last_failed_signin_at: null,
+    })
+    .eq('display_name', 'Kuei');
+}
