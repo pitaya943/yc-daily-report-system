@@ -248,8 +248,7 @@ VALUES (1);
 INSERT INTO public.retention_annual_caps (calendar_year, cap_ntd)
 VALUES (2026, 60000);
 
--- Full work-item catalogues spec §4 (B-038–B-040)
-\ir seeds/work_items_full.sql
+-- Full work-item catalogues: supabase/seeds/work_items_full.sql (config db.seed.sql_paths)
 
 -- ---------------------------------------------------------------------------
 -- Placeholder materials (PROVISIONAL)

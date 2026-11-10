@@ -53,4 +53,4 @@ double_confirm_changes = false
 
 [db.seed]
 enabled = true
-sql_paths = ["./seed.sql"]
+sql_paths = ["./seed.sql", "./seeds/work_items_full.sql"]
