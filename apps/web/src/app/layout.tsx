@@ -11,7 +11,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-Hant-TW">
-      <body>{children}</body>
+      <body style={{ fontFamily: 'sans-serif', padding: '1rem' }}>
+        {children}
+      </body>
     </html>
   );
 }

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
+import { apiBase, landingPath } from '../../lib/api';
 
 export default function LoginPage() {
   const [names, setNames] = useState<string[]>([]);
@@ -33,7 +33,10 @@ export default function LoginPage() {
       setMessage(text || '登入失敗');
       return;
     }
-    setMessage('登入成功');
+    const data = (await res.json()) as {
+      account: { role: string };
+    };
+    window.location.href = landingPath(data.account.role);
   }
 
   return (

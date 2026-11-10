@@ -13,4 +13,15 @@ export const ValidationMessages = {
   passwordWrong: '密碼錯誤，請重試',
   lockout: '密碼錯誤次數過多，請在 15 分鐘後再試',
   bigMeterBeforeAdmin: '請先關閉大表旗標，再切換為管理員', // PROVISIONAL(Q-057)
+  reportDateInvalid:
+    '回報日期須為今天或往前 30 天內，不可選擇未來日期',
+  qtyInvalid: '工項數量須為 0 到 999.9，最小單位 0.1',
+  dailyCap: '每日最多只能送出 3 筆回報',
+  materialRequestQty: '申請數量須為 1 到 99 的整數',
+  materialNotRequestable: '此材料目前不可申請',
+  materialInsufficient: '庫存不足，無法申請',
+  materialInsufficientApprove: '庫存不足，無法核准',
+  collaboratorLimit:
+    '共同作業者最多 6 人，且須為同一區域、同一類型的啟用員工',
+  confirmedReportNoEdit: '已核准回報僅可預覽',
 } as const;

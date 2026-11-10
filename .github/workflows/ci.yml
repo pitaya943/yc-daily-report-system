@@ -18,7 +18,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/validation run typecheck
+      - run: pnpm --filter @yc/allocation run typecheck
       - run: pnpm --filter @yc/api run typecheck
       - run: pnpm --filter @yc/web run typecheck
 
@@ -34,7 +36,10 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/validation run test:unit
+      - run: pnpm --filter @yc/allocation run test:unit
       - run: pnpm --filter @yc/api run test:unit
 
   integration:
@@ -59,8 +64,10 @@ jobs:
           echo "SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
           echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
           echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
+          echo "DATABASE_URL=${DB_URL}" >> $GITHUB_ENV
       - run: supabase db reset
       - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/api run build
       - name: integration tests
         env:
@@ -94,8 +101,10 @@ jobs:
           echo "SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
           echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
           echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
+          echo "DATABASE_URL=${DB_URL}" >> $GITHUB_ENV
       - run: supabase db reset
       - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
       - run: pnpm --filter @yc/api run build
       - run: pnpm --filter @yc/web run build
       - run: pnpm --filter @yc/e2e exec playwright install --with-deps chromium
@@ -106,4 +115,5 @@ jobs:
           NEXT_PUBLIC_API_URL: http://127.0.0.1:3001
           SEED_PASSWORD: seedpass01
           WEB_ORIGIN: http://127.0.0.1:3000
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: pnpm --filter @yc/e2e run test

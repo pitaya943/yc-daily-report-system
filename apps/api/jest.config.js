@@ -5,6 +5,7 @@ module.exports = {
   roots: ['<rootDir>/src', '<rootDir>/test'],
   moduleNameMapper: {
     '^@yc/validation$': '<rootDir>/../../packages/validation/src',
+    '^@yc/allocation$': '<rootDir>/../../packages/allocation/src',
   },
   testTimeout: 120000,
 };

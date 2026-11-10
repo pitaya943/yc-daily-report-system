@@ -248,25 +248,8 @@ VALUES (1);
 INSERT INTO public.retention_annual_caps (calendar_year, cap_ntd)
 VALUES (2026, 60000);
 
--- ---------------------------------------------------------------------------
--- Minimal work_items (2–3 per price_set) + unit_prices
--- ---------------------------------------------------------------------------
-
-INSERT INTO public.work_items (code, catalogue, display_name, default_price, attracts_retention, sort_order)
-VALUES
-  ('direct_13', 'WEST', '直總-13', 120, true, 1),
-  ('indirect_13', 'WEST', '間接-13', 75, true, 2),
-  ('mobilization', 'WEST', '動員', 1200, false, 3),
-  ('direct_13', 'SOUTH', '直總-13', 140, true, 1),
-  ('s_orig_13', 'SOUTH', '原改-13', 40, false, 2),
-  ('mobilization', 'SOUTH', '動員', 1200, false, 3),
-  ('bm_50_down', 'BIG_METER', '50mm下', 1100, false, 1),
-  ('bm_75_down', 'BIG_METER', '75mm下', 1800, false, 2),
-  ('bm_rm_screw50', 'BIG_METER', '拆表/復水-螺紋50mm', 800, false, 3);
-
-INSERT INTO public.unit_prices (price_set, item_code, price)
-SELECT catalogue, code, default_price
-FROM public.work_items;
+-- Full work-item catalogues spec §4 (B-038–B-040)
+\ir seeds/work_items_full.sql
 
 -- ---------------------------------------------------------------------------
 -- Placeholder materials (PROVISIONAL)
