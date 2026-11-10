@@ -11,13 +11,13 @@ const describeIntegration = integrationEnabled() ? describe : describe.skip;
 describeIntegration('B-061 idle session expiry', () => {
   it('B-061 destroys session after idle TTL and rolling refresh extends', async () => {
     const prev = process.env.SESSION_IDLE_MINUTES;
-    process.env.SESSION_IDLE_MINUTES = '0.02';
+    process.env.SESSION_IDLE_MINUTES = '0.05';
     const app = await createTestApp();
     requireIntegration();
     try {
       const agent = request.agent(app.getHttpServer());
       await agent.post('/auth/sign-in').send({
-        displayName: '種子管理員',
+        displayName: '種子西區',
         password: SEED_PASSWORD,
       });
       const ok1 = await agent.get('/reports/mine');

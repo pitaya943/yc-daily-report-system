@@ -23,10 +23,6 @@ test('B-063 history filter pagination and export', async ({ page, request }) => 
 });
 
 test('B-069 confirmation zone filter and batch UI', async ({ page }) => {
-  const admin = await request.post(`${API}/auth/sign-in`, {
-    data: { displayName: '種子管理員', password: SEED_PASSWORD },
-  });
-  expect(admin.ok()).toBeTruthy();
   await page.goto('/login');
   await page.getByRole('button', { name: /管理員/ }).click();
   await page.selectOption('select', '種子管理員');
