@@ -16,18 +16,19 @@ describeIntegration('B-061 idle session expiry', () => {
     requireIntegration();
     try {
       const agent = request.agent(app.getHttpServer());
-      await agent.post('/auth/sign-in').send({
-        displayName: '種子西區',
+      const signedIn = await agent.post('/auth/sign-in').send({
+        displayName: '種子管理員',
         password: SEED_PASSWORD,
       });
-      const ok1 = await agent.get('/reports/mine');
+      expect(signedIn.status).toBeLessThan(300);
+      const ok1 = await agent.get('/confirmation/pending');
       expect(ok1.status).toBeLessThan(300);
-      await agent.get('/reports/mine');
-      await new Promise((r) => setTimeout(r, 1500));
-      const ok2 = await agent.get('/reports/mine');
-      expect(ok2.status).toBeLessThan(300);
+      await agent.get('/confirmation/pending');
       await new Promise((r) => setTimeout(r, 2500));
-      const expired = await agent.get('/reports/mine');
+      const ok2 = await agent.get('/confirmation/pending');
+      expect(ok2.status).toBeLessThan(300);
+      await new Promise((r) => setTimeout(r, 4000));
+      const expired = await agent.get('/confirmation/pending');
       expect(expired.status).toBe(401);
     } finally {
       process.env.SESSION_IDLE_MINUTES = prev;
