@@ -33,6 +33,8 @@ describeIntegration('B-076 petty cash cumulative balance', () => {
     });
     expect([200, 201]).toContain(login.status);
     const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
+    const before = (await admin.get('/ledger/entries')).body.pettyCash
+      .balance as number;
     const { body: income } = await admin.post('/ledger/entries').send({
       entryDate: today,
       type: 'INCOME',
@@ -48,6 +50,6 @@ describeIntegration('B-076 petty cash cumulative balance', () => {
     await admin.post(`/ledger/entries/${income.id}/void`).send({});
 
     const list = await admin.get('/ledger/entries');
-    expect(list.body.pettyCash.balance).toBe(-200);
+    expect(list.body.pettyCash.balance - before).toBe(-200);
   });
 });

@@ -11,11 +11,20 @@ export default function LoginPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    void fetch(`${apiBase}/auth/sign-in-names?type=admin`, {
-      credentials: 'include',
-    })
-      .then((r) => r.json())
-      .then((d: { names: string[] }) => setNames(d.names ?? []))
+    void Promise.all([
+      fetch(`${apiBase}/auth/sign-in-names?type=admin`, {
+        credentials: 'include',
+      }).then((r) => r.json() as Promise<{ names: string[] }>),
+      fetch(`${apiBase}/auth/sign-in-names?type=employee`, {
+        credentials: 'include',
+      }).then((r) => r.json() as Promise<{ names: string[] }>),
+    ])
+      .then(([admin, employee]) => {
+        const merged = [
+          ...new Set([...(admin.names ?? []), ...(employee.names ?? [])]),
+        ].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+        setNames(merged);
+      })
       .catch(() => setMessage('無法載入帳戶清單'));
   }, []);
 

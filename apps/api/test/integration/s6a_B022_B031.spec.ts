@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import ExcelJS from 'exceljs';
+import { Workbook } from 'exceljs';
 import {
   integrationEnabled,
   requireIntegration,
@@ -137,7 +137,7 @@ describeIntegration('S6a B-022–B-031 B-036', () => {
 
   describe('B-036 B-066 xlsx import', () => {
     it('accepts xlsx with required headers', async () => {
-      const wb = new ExcelJS.Workbook();
+      const wb = new Workbook();
       const sheet = wb.addWorksheet('inv');
       sheet.addRow(['材料編號', '實領量']);
       sheet.addRow(['code-x', 1]);
