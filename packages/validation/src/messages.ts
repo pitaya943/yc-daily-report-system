@@ -23,6 +23,8 @@ export const ValidationMessages = {
   passwordWrong: '密碼錯誤，請重試',
   lockout: '密碼錯誤次數過多，請在 15 分鐘後再試',
   bigMeterBeforeAdmin: '請先關閉大表旗標，再切換為管理員', // PROVISIONAL(Q-057)
+  bigMeterConfirm: '請確認是否為大表帳戶',
+  uninsuredExemptConfirm: '請確認是否免扣未投保比例',
   reportDateInvalid:
     '回報日期須為今天或往前 30 天內，不可選擇未來日期',
   qtyInvalid: '工項數量須為 0 到 999.9，最小單位 0.1',

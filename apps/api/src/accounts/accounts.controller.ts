@@ -38,6 +38,7 @@ export class AccountsController {
       password: string;
       zone?: 'WEST' | 'SOUTH';
       bigMeter?: boolean;
+      confirmBigMeter?: boolean;
     },
   ) {
     return this.accounts.createUser(actor, body);
@@ -67,7 +68,7 @@ export class AccountsController {
   switchRole(
     @CurrentAccount() actor: SessionAccount,
     @Param('id') id: string,
-    @Body() body: { role: 'USER' | 'ADMIN' },
+    @Body() body: { role: string },
   ) {
     return this.accounts.switchRole(actor, id, body.role);
   }

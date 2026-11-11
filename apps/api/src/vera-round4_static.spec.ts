@@ -60,35 +60,78 @@ function registryKey(method: string, path: string): string {
   return `${method.toUpperCase()} ${path}`;
 }
 
-const HTTP_EXCEPTION_CLASSES =
-  'BadRequest|Forbidden|NotFound|Unauthorized|Conflict|ServiceUnavailable|InternalServerError|UnprocessableEntity|HttpException';
+/** Named Nest exceptions (suffix `Exception`) plus bare `HttpException`. */
+const NAMED_HTTP_EXCEPTION =
+  'BadRequest|Forbidden|NotFound|Unauthorized|Conflict|ServiceUnavailable|InternalServerError|UnprocessableEntity';
+const HTTP_EXCEPTION_CTOR = `(?:(${NAMED_HTTP_EXCEPTION})Exception|HttpException)`;
 
-function findRawMessagePassthrough(text: string): boolean {
+export function findRawMessagePassthrough(text: string): boolean {
   const patterns = [
     new RegExp(
-      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*?\\w+\\.message`,
+      `throw\\s+new\\s+${HTTP_EXCEPTION_CTOR}\\s*\\([^)]*?\\w+\\.message`,
     ),
     new RegExp(
-      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*?\\?\\.message`,
+      `throw\\s+new\\s+${HTTP_EXCEPTION_CTOR}\\s*\\([^)]*?\\?\\.message`,
     ),
     new RegExp(
-      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*message:\\s*\\w+\\.message`,
+      `throw\\s+new\\s+${HTTP_EXCEPTION_CTOR}\\s*\\([^)]*message:\\s*\\w+\\.message`,
     ),
     new RegExp(
-      `new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*?\\w+\\.message`,
+      `new\\s+${HTTP_EXCEPTION_CTOR}\\s*\\([^)]*?\\w+\\.message`,
     ),
   ];
   return patterns.some((re) => re.test(text));
 }
 
-function findEmptyHttpExceptionCtor(text: string): boolean {
+export function findEmptyHttpExceptionCtor(text: string): boolean {
   const re = new RegExp(
-    `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\(\\s*\\)`,
+    `throw\\s+new\\s+${HTTP_EXCEPTION_CTOR}\\s*\\(\\s*\\)`,
   );
   return re.test(text);
 }
 
+const SCANNER_FIXTURES: Array<{
+  name: string;
+  snippet: string;
+  r47: boolean;
+  r48: boolean;
+}> = [
+  {
+    name: 'plain HttpException with error.message',
+    snippet: 'throw new HttpException(error.message);',
+    r47: true,
+    r48: false,
+  },
+  {
+    name: 'plain HttpException with err?.message',
+    snippet: 'throw new HttpException(err?.message);',
+    r47: true,
+    r48: false,
+  },
+  {
+    name: 'empty plain HttpException',
+    snippet: 'throw new HttpException();',
+    r47: false,
+    r48: true,
+  },
+  {
+    name: 'empty BadRequestException (control)',
+    snippet: 'throw new BadRequestException();',
+    r47: false,
+    r48: true,
+  },
+];
+
 describe('Vera round 4 — static gates', () => {
+  describe('[F-A1] scanner self-test (in-memory fixtures)', () => {
+    for (const fixture of SCANNER_FIXTURES) {
+      it(`R4-7/R4-8 detects ${fixture.name}`, () => {
+        expect(findRawMessagePassthrough(fixture.snippet)).toBe(fixture.r47);
+        expect(findEmptyHttpExceptionCtor(fixture.snippet)).toBe(fixture.r48);
+      });
+    }
+  });
+
   it('[R4-5] write-route-registry includes every mutating controller route', () => {
     const discovered = discoverMutatingRoutes();
     const registered = new Set(

@@ -22,6 +22,9 @@ import {
   validateRetentionOffset,
   validateUninsuredRate,
   validateZone,
+  validateSwitchRole,
+  validateBigMeterFlag,
+  validateUninsuredExemptFlag,
 } from '@yc/validation';
 import { throwFieldBadRequest } from '../common/field-error';
 
@@ -127,6 +130,7 @@ export class AccountsService {
       password: string;
       zone?: 'WEST' | 'SOUTH';
       bigMeter?: boolean;
+      confirmBigMeter?: boolean;
     },
   ) {
     if (actor.role !== 'ADMIN' && actor.role !== 'OWNER') {
@@ -134,6 +138,8 @@ export class AccountsService {
     }
     const zoneErr = validateZone(body.zone);
     if (zoneErr) throwFieldBadRequest(zoneErr);
+    const bmErr = validateBigMeterFlag(body.bigMeter, body.confirmBigMeter);
+    if (bmErr) throwFieldBadRequest(bmErr);
     return this.createAccount(actor, {
       displayName: body.displayName,
       password: body.password,
@@ -273,11 +279,10 @@ export class AccountsService {
   }
 
   /** B-048 Q-057 owner switches USER<->ADMIN. */
-  async switchRole(
-    actor: SessionAccount,
-    targetId: string,
-    role: 'USER' | 'ADMIN',
-  ) {
+  async switchRole(actor: SessionAccount, targetId: string, role: unknown) {
+    const roleErr = validateSwitchRole(role);
+    if (roleErr) throwFieldBadRequest(roleErr);
+    const nextRole = role as 'USER' | 'ADMIN';
     if (actor.role !== 'OWNER') {
       await this.audit.logAccessDenied(
         actor.id,
@@ -290,21 +295,21 @@ export class AccountsService {
     if (target.role === 'OWNER') {
       throw new BadRequestException(ValidationMessages.cannotArchiveOwner);
     }
-    if (role === 'ADMIN' && target.big_meter) {
+    if (nextRole === 'ADMIN' && target.big_meter) {
       throw new BadRequestException(ValidationMessages.bigMeterBeforeAdmin);
     }
     await this.db()
       .from('accounts')
       .update({
-        role,
-        big_meter: role === 'ADMIN' ? false : target.big_meter,
+        role: nextRole,
+        big_meter: nextRole === 'ADMIN' ? false : target.big_meter,
       })
       .eq('id', targetId);
     await this.audit.write({
       actorId: actor.id,
       actorDisplayName: actor.displayName,
       actionType: 'ACCOUNT_ROLE_CHANGE',
-      description: `切換 ${target.display_name} 角色為 ${role}`,
+      description: `切換 ${target.display_name} 角色為 ${nextRole}`,
     });
     return { ok: true };
   }
@@ -527,6 +532,8 @@ export class AccountsService {
       patch.pay_fixed_every_period = body.payFixedEveryPeriod;
     }
     if (body.uninsuredExempt !== undefined) {
+      const exErr = validateUninsuredExemptFlag(body.uninsuredExempt);
+      if (exErr) throwFieldBadRequest(exErr);
       patch.uninsured_exempt = body.uninsuredExempt;
     }
     if (body.uninsuredRateOverride !== undefined && body.uninsuredRateOverride !== null) {

@@ -41,6 +41,44 @@ export function validateZone(zone: string | undefined): FieldError | null {
   return null;
 }
 
+/** B-088 L308 — only USER or ADMIN; OWNER cannot be chosen. */
+export function validateSwitchRole(role: unknown): FieldError | null {
+  if (role !== 'USER' && role !== 'ADMIN') {
+    return { field: 'role', message: ValidationMessages.roleRequired };
+  }
+  return null;
+}
+
+/** B-088 L310 — big-meter flag must be an explicit confirmed boolean. */
+export function validateBigMeterFlag(
+  bigMeter: unknown,
+  confirmBigMeter?: unknown,
+): FieldError | null {
+  if (bigMeter === undefined) return null;
+  if (typeof bigMeter !== 'boolean') {
+    return { field: 'bigMeter', message: ValidationMessages.bigMeterConfirm };
+  }
+  if (bigMeter === true && confirmBigMeter !== true) {
+    return {
+      field: 'confirmBigMeter',
+      message: ValidationMessages.bigMeterConfirm,
+    };
+  }
+  return null;
+}
+
+/** B-088 L315 — uninsured-exempt flag must be boolean when sent. */
+export function validateUninsuredExemptFlag(value: unknown): FieldError | null {
+  if (value === undefined) return null;
+  if (typeof value !== 'boolean') {
+    return {
+      field: 'uninsuredExempt',
+      message: ValidationMessages.uninsuredExemptConfirm,
+    };
+  }
+  return null;
+}
+
 export function validateUninsuredRate(rate: number): FieldError | null {
   if (rate < 0 || rate > 100) {
     return { field: 'rate', message: ValidationMessages.uninsuredRateRange };
