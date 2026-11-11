@@ -75,7 +75,11 @@ const REJECTIONS: Record<
     body: { tabName1: 'x'.repeat(51) },
   },
   'account-create-admin': { method: 'post', path: '/owner/admins', body: { displayName: '', password: 'x' } },
-  'account-create-user': { method: 'post', path: '/accounts/users', body: { displayName: '', password: 'x' } },
+  'account-create-user': {
+    method: 'post',
+    path: '/accounts/users',
+    body: { displayName: 'B088缺區用戶', password: 'userpass1' },
+  },
   'bank-account': {
     method: 'patch',
     path: '/accounts/b0000001-0001-4000-8000-000000000003/bank',
@@ -201,6 +205,27 @@ const REJECTIONS: Record<
   },
 };
 
+/** Exact spec message when the rejection payload targets a single B-088 rule. */
+const EXPECTED_MESSAGE: Partial<Record<string, string>> = {
+  'auth-sign-in': ValidationMessages.displayNameRequired,
+  'account-create-admin': ValidationMessages.displayNameRequired,
+  'account-create-user': ValidationMessages.zoneRequired,
+  'payroll-calculate': ValidationMessages.payrollEndBeforeStart,
+  'ledger-create': ValidationMessages.ledgerPayerIncomeOnly,
+  'password-change': ValidationMessages.passwordMismatch,
+  'material-import': ValidationMessages.importFileInvalid,
+  'retention-cap': ValidationMessages.retentionCapInteger,
+  'unit-price': ValidationMessages.unitPriceRange,
+  'account-financials': ValidationMessages.paymentRequired,
+  'retention-offset': ValidationMessages.retentionOffsetInteger,
+  'account-item-retention': ValidationMessages.perItemRetentionRate,
+  'report-create': ValidationMessages.reportDateInvalid,
+  'material-request': ValidationMessages.materialRequestQty,
+  'material-admin-add': ValidationMessages.materialSpecificationMax,
+  'settings-system': ValidationMessages.materialTabNameMax,
+  'bank-account': ValidationMessages.bankDigitsInvalid,
+};
+
 describeIntegration('B-088 write route rejection per registry', () => {
   let app: Awaited<ReturnType<typeof createTestApp>>;
   const server = () => app.getHttpServer();
@@ -251,6 +276,15 @@ describeIntegration('B-088 write route rejection per registry', () => {
                   ? await authedAgent('admin')
                   : await authedAgent('admin');
 
+      const db = app.get(SupabaseService).getServiceClient();
+      let payrollRunsBefore: number | undefined;
+      if (row.validator === 'payroll-calculate') {
+        const { count } = await db
+          .from('payroll_runs')
+          .select('id', { count: 'exact', head: true });
+        payrollRunsBefore = count ?? 0;
+      }
+
       let res;
       if (spec.method === 'post') {
         res = await agent.post(spec.path).send(spec.body ?? {});
@@ -264,6 +298,10 @@ describeIntegration('B-088 write route rejection per registry', () => {
       if (res.status === 400) {
         expect(msg).toMatch(/[\u4e00-\u9fff]/);
       }
+      const expected = EXPECTED_MESSAGE[row.validator];
+      if (expected) {
+        expect(msg).toContain(expected);
+      }
       if (row.validator === 'payroll-calculate') {
         expect(msg).toContain(ValidationMessages.payrollEndBeforeStart);
       }
@@ -275,6 +313,21 @@ describeIntegration('B-088 write route rejection per registry', () => {
       }
       if (row.validator === 'material-import') {
         expect(msg).toContain(ValidationMessages.importFileInvalid);
+      }
+      if (row.validator === 'account-create-user') {
+        const db = app.get(SupabaseService).getServiceClient();
+        const { data } = await db
+          .from('accounts')
+          .select('id')
+          .eq('display_name', 'B088缺區用戶')
+          .maybeSingle();
+        expect(data).toBeNull();
+      }
+      if (row.validator === 'payroll-calculate' && payrollRunsBefore !== undefined) {
+        const { count: after } = await db
+          .from('payroll_runs')
+          .select('id', { count: 'exact', head: true });
+        expect(after).toBe(payrollRunsBefore);
       }
     });
   }

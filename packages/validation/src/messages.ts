@@ -64,6 +64,8 @@ export const ValidationMessages = {
   insuranceDeductionInteger: '勞健保扣除額須為 0 或正整數',
   insuranceDeductionEnrolledMin: '已投保時，扣除額須至少為 1',
   unitPriceRange: '單價須為 0 或正數，最多兩位小數',
+  unitPriceIncompletePayroll:
+    '單價尚未設定完整，無法計算薪資，請先補齊單價',
   payrollDatesRequired: '請輸入正確的開始與結束日期',
   payrollEndBeforeStart: '結束日期不可早於開始日期',
   evidenceFormatInvalid:

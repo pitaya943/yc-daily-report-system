@@ -41,6 +41,17 @@ export function validateZone(zone: string | undefined): FieldError | null {
   return null;
 }
 
+/** B-088 L309 — zone required when creating a USER account. */
+export function validateZoneRequired(zone: string | undefined): FieldError | null {
+  if (zone == null || zone === '') {
+    return { field: 'zone', message: ValidationMessages.zoneRequired };
+  }
+  if (zone !== 'WEST' && zone !== 'SOUTH') {
+    return { field: 'zone', message: ValidationMessages.zoneRequired };
+  }
+  return null;
+}
+
 /** B-088 L308 — only USER or ADMIN; OWNER cannot be chosen. */
 export function validateSwitchRole(role: unknown): FieldError | null {
   if (role !== 'USER' && role !== 'ADMIN') {

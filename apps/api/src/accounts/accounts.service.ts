@@ -22,6 +22,7 @@ import {
   validateRetentionOffset,
   validateUninsuredRate,
   validateZone,
+  validateZoneRequired,
   validateSwitchRole,
   validateBigMeterFlag,
   validateUninsuredExemptFlag,
@@ -136,7 +137,7 @@ export class AccountsService {
     if (actor.role !== 'ADMIN' && actor.role !== 'OWNER') {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
-    const zoneErr = validateZone(body.zone);
+    const zoneErr = validateZoneRequired(body.zone);
     if (zoneErr) throwFieldBadRequest(zoneErr);
     const bmErr = validateBigMeterFlag(body.bigMeter, body.confirmBigMeter);
     if (bmErr) throwFieldBadRequest(bmErr);
@@ -144,7 +145,7 @@ export class AccountsService {
       displayName: body.displayName,
       password: body.password,
       role: 'USER',
-      zone: body.zone ?? 'WEST',
+      zone: body.zone as 'WEST' | 'SOUTH',
       bigMeter: body.bigMeter ?? false,
     });
   }

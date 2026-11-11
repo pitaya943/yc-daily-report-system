@@ -15,9 +15,13 @@ import { SessionAccount } from '../auth/types';
 import { throwFieldBadRequest } from '../common/field-error';
 import { ExportService } from '../export/export.service';
 import { BankService } from '../bank/bank.service';
-import { validatePayrollDateRange, ValidationMessages } from '@yc/validation';
+import {
+  validateFixedSalary,
+  validatePayrollDateRange,
+  ValidationMessages,
+} from '@yc/validation';
 
-const PAYROLL_BLOCK_MSG = '單價尚未設定完整，無法計算薪資，請先補齊單價';
+const PAYROLL_BLOCK_MSG = ValidationMessages.unitPriceIncompletePayroll;
 
 type PriceSet = 'WEST' | 'SOUTH' | 'BIG_METER';
 
@@ -55,6 +59,12 @@ export class PayrollService {
     const { startDate, endDate } = body;
     const dateErr = validatePayrollDateRange(startDate, endDate);
     if (dateErr) throwFieldBadRequest(dateErr);
+    if (body.fixedSalaryManual) {
+      for (const val of Object.values(body.fixedSalaryManual)) {
+        const fixErr = validateFixedSalary(val);
+        if (fixErr) throwFieldBadRequest(fixErr);
+      }
+    }
     const capYear = new Date(`${endDate}T12:00:00+08:00`).getUTCFullYear();
     const { data: capRow } = await this.db()
       .from('retention_annual_caps')
@@ -127,6 +137,37 @@ export class PayrollService {
     const sharesYtd = sharesAll.filter((s) =>
       inRange(s.report_id, yearStart, startDate, true),
     );
+
+    const accountById = new Map(
+      (accounts ?? []).map((a) => [a.id as string, a]),
+    );
+    const priceSetFor = (acc: {
+      zone: string;
+      big_meter: boolean;
+    }): PriceSet =>
+      acc.big_meter
+        ? 'BIG_METER'
+        : acc.zone === 'SOUTH'
+          ? 'SOUTH'
+          : 'WEST';
+    const neededPriceKeys = new Set<string>();
+    for (const s of [...sharesPeriod, ...sharesYtd]) {
+      const acc = accountById.get(s.account_id as string);
+      if (!acc) continue;
+      const isPayrollRole =
+        acc.role === 'USER' ||
+        acc.role === 'ADMIN' ||
+        acc.role === 'OWNER';
+      if (!isPayrollRole) continue;
+      neededPriceKeys.add(
+        `${priceSetFor(acc)}:${s.item_code as string}`,
+      );
+    }
+    for (const key of neededPriceKeys) {
+      if (!priceMap.has(key)) {
+        throw new BadRequestException(PAYROLL_BLOCK_MSG);
+      }
+    }
 
     const { data: run, error: runErr } = await this.db()
       .from('payroll_runs')
