@@ -17,7 +17,6 @@
 - 規格與 `docs/behavior-spec-final.md` 不一致時，以規格為準並先問 Kuei
 
 ## 審查深度
-- Roles / 角色：Alex `<drafts the work plan>`，Chief `<reviews the plan>`，Vera `<verification; PASS before @claude review>`，Kuei `<approves done-when and merges>`。
 - Vera PASS 之後，每個 PR 都跑 @claude review，然後 Kuei merge。Claude 額度用完時，Kuei 可不等該次 @claude review 直接合併，須記錄。When the Claude quota is exhausted, Kuei may merge without waiting for that @claude review, and it must be recorded.
 - 重大變更：開工前再跑一次 interrogate（選用）
 - `@claude review` 只是審查，不會自動跑 grill-me；需要 grill-me 時走 `claude.ai/code` session
@@ -35,7 +34,7 @@
 
 ## 分工計畫（一頁） / Work plan (one page)
 
-Source of truth: [docs/work-plan-template.md](docs/work-plan-template.md). This section must match that file; if they differ, the file wins.
+This section is the single source for the work plan. Copy it per task. 本節就是分工計畫的唯一來源，每個任務複製這一段。
 
 Kuei decision 2026-11-11 19:47. Copy this page per task. Fill every blank before work starts.
 
@@ -43,7 +42,7 @@ Roles / 角色：Alex `<drafts the work plan>`，Chief `<reviews the plan>`，Ve
 
 Flow / 流程: Alex drafts → Chief reviews → Kuei approves the done-when → work starts. Independent tickets run in parallel. Never give a whole task to one agent to do in sequence.
 
-## 1. Tickets / 工單（dependencies + parallel）
+### 1. Tickets / 工單（dependencies + parallel）
 
 | ID | Ticket | Depends on | Parallel group | Owner role |
 |----|--------|------------|----------------|------------|
@@ -52,7 +51,7 @@ Flow / 流程: Alex drafts → Chief reviews → Kuei approves the done-when →
 
 Parallel / 可並行: tickets in the same group, with no dependency on each other, run at the same time. A ticket that depends on another waits.
 
-## 2. Done-when / 完成條件（each ticket）
+### 2. Done-when / 完成條件（each ticket）
 
 | ID | Done-when（observable） |
 |----|-------------------------|
@@ -61,7 +60,7 @@ Parallel / 可並行: tickets in the same group, with no dependency on each othe
 
 Kuei approves this table before any ticket starts.
 
-## 3. Model per role / 角色用哪個模型
+### 3. Model per role / 角色用哪個模型
 
 Never Opus. This covers every role: build, fix rounds, and verification.
 
@@ -73,7 +72,7 @@ Never Opus. This covers every role: build, fix rounds, and verification.
 
 Verdict / 驗證結論（fill after the check）: builder `<model>`, verifier `<model>`, family `<same / different>`, note `<if only one family: say so>`.
 
-## 4. Usage estimate / 用量估計 and stop threshold / 停止門檻
+### 4. Usage estimate / 用量估計 and stop threshold / 停止門檻
 
 | ID | Estimate | Notes |
 |----|----------|-------|
@@ -83,7 +82,7 @@ Verdict / 驗證結論（fill after the check）: builder `<model>`, verifier `<
 
 Stop threshold / 停止門檻: <number>. Stop and ask Kuei when a ticket or the total reaches this. Do not keep spending past it.
 
-## 5. Inventory / 系統級規則盤點（own ticket）
+### 5. Inventory / 系統級規則盤點（own ticket）
 
 Own ticket / 獨立工單: `<Tid>` — system-wide rules, item by item (each field, each route, each role/permission is one row). The ticket is done only when every item has its own row with spec line, file:line and test name.
 
@@ -94,7 +93,7 @@ Own ticket / 獨立工單: `<Tid>` — system-wide rules, item by item (each fie
 | permissions | POST /api/orders | <docs/spec.md:30> | <api/orders.ts:18> | <member cannot create order> |
 | permissions | DELETE /api/orders/:id | <docs/spec.md:31> | <api/orders.ts:55> | <member cannot delete order> |
 
-## 6. Flow reminder / 流程（do not skip）
+### 6. Flow reminder / 流程（do not skip）
 
 1. Alex drafts this page.
 2. Chief reviews tickets, dependencies, parallel groups, models, and the stop threshold.
