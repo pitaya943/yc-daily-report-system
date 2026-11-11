@@ -42,6 +42,20 @@ describeIntegration('Vera round 4 — failing acceptance tests (step 1)', () => 
     await resetSeedLockouts(app.get(SupabaseService));
   });
 
+  afterEach(async () => {
+    const db = app.get(SupabaseService).getServiceClient();
+    const { data } = await db
+      .from('accounts')
+      .select('auth_user_id')
+      .eq('id', SEED_ADMIN_ID)
+      .single();
+    if (data?.auth_user_id) {
+      await db.auth.admin.updateUserById(data.auth_user_id, {
+        password: SEED_PASSWORD,
+      });
+    }
+  });
+
   afterAll(async () => app.close());
 
   async function latestAccessDenied(actorId: string) {
