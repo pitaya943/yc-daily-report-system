@@ -30,6 +30,6 @@ describeIntegration('B-066 B-054 material import and reset', () => {
     });
     expect(res.status).toBe(201);
     expect(res.body.comparisonLabel).toMatch(/已對比/);
-    await agent.post('/materials/admin/reset').expect(201);
+    await agent.post('/materials/admin/reset').send({ confirm: true }).expect(201);
   });
 });
