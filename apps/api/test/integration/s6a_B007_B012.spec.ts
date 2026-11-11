@@ -63,6 +63,7 @@ describeIntegration('S6a B-007–B-012', () => {
       const res = await agent.post('/accounts/users').send({
         displayName: `員工${Date.now()}`,
         password: SEED_PASSWORD,
+        zone: 'WEST',
       });
       expect(res.status).toBe(201);
       expect(res.body.account?.role).toBe('USER');

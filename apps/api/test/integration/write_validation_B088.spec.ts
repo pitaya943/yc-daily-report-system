@@ -207,7 +207,7 @@ const REJECTIONS: Record<
 
 /** Exact spec message when the rejection payload targets a single B-088 rule. */
 const EXPECTED_MESSAGE: Partial<Record<string, string>> = {
-  'auth-sign-in': ValidationMessages.displayNameRequired,
+  'auth-sign-in': ValidationMessages.accountRequired,
   'account-create-admin': ValidationMessages.displayNameRequired,
   'account-create-user': ValidationMessages.zoneRequired,
   'payroll-calculate': ValidationMessages.payrollEndBeforeStart,
