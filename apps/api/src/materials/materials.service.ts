@@ -336,9 +336,16 @@ export class MaterialsService {
       patch.remaining_qty = body.remainingQty;
     }
     if (body.cumulativeUsage != null) {
+      const cumErr = validateMaterialQty(body.cumulativeUsage, 'cumulativeUsage');
+      if (cumErr) throwFieldBadRequest(cumErr);
       patch.cumulative_usage = body.cumulativeUsage;
     }
-    if (body.hidden != null) patch.hidden = body.hidden;
+    if (body.hidden !== undefined && body.hidden !== null) {
+      if (typeof body.hidden !== 'boolean') {
+        throw new BadRequestException(ValidationMessages.materialHiddenConfirm);
+      }
+      patch.hidden = body.hidden;
+    }
     if (body.tab != null) {
       const tabErr = validateMaterialTab(body.tab);
       if (tabErr) throwFieldBadRequest(tabErr);
@@ -613,7 +620,7 @@ export class MaterialsService {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     if (confirm !== true) {
-      throw new BadRequestException('請確認重設材料庫存');
+      throw new BadRequestException(ValidationMessages.materialResetConfirm);
     }
     await this.db()
       .from('materials')

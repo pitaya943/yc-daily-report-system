@@ -335,8 +335,6 @@ export class ReportsService {
     const wasRejected = report.status === 'REJECTED';
     const editorId = isSubmitter ? account.id : report.submitter_id;
 
-    await this.applyQuantitiesToReport(reportId, editorId, body.quantities);
-
     if (
       body.customItemName !== undefined &&
       (account.role === 'ADMIN' || account.role === 'OWNER')
@@ -347,9 +345,17 @@ export class ReportsService {
         unitPrice: body.customItemUnitPrice,
       });
       if (customErr) {
-      const validationMsg = customErr.message;
-      throw new BadRequestException(validationMsg);
+        const validationMsg = customErr.message;
+        throw new BadRequestException(validationMsg);
+      }
     }
+
+    await this.applyQuantitiesToReport(reportId, editorId, body.quantities);
+
+    if (
+      body.customItemName !== undefined &&
+      (account.role === 'ADMIN' || account.role === 'OWNER')
+    ) {
       const name = body.customItemName?.trim() ?? '';
       if (!name) {
         await this.db()

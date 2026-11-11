@@ -81,6 +81,19 @@ export const ValidationMessages = {
   accountCreateFailed: '無法建立帳戶，請稍後再試',
   ledgerPayerIncomeOnly: '僅支出可指定支出者',
   ledgerRecordVoided: '此紀錄已作廢',
+  ledgerEvidenceDeleteBlocked: '此紀錄有證據檔案，不能刪除，只能作廢',
   materialSpecificationMax: '規格最多 200 個字',
   materialTabNameMax: '分頁名稱最多 50 個字',
+  /**
+   * L318/L319/L354 spec cells are an em dash.
+   * Nearest wording is the on/off confirm pattern (L310, L315): 「請確認是否…」.
+   */
+  fixedSalaryAddBackConfirm: '請確認是否加回固定薪資',
+  payFixedEveryPeriodConfirm: '請確認是否每期發放固定薪資',
+  is10thPaydayConfirm: '請確認是否為 10 號發薪',
+  /** Write-route hidden flag; same confirm-flag pattern. */
+  materialHiddenConfirm: '請確認是否隱藏材料',
+  yearEndRequired: '請選擇要結算的年度',
+  archiveTypeAndDate: '請選擇報表類型與日期',
+  materialResetConfirm: '請確認重設材料庫存',
 } as const;

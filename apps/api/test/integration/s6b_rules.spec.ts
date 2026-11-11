@@ -218,6 +218,8 @@ describeIntegration('S6b B-051–B-098 behaviour', () => {
       });
       const res = await admin.post('/archives/daily').send({
         archiveDate: '2026-11-09',
+        type: 'DAILY',
+        source: 'MANUAL',
       });
       expect(res.status).toBe(201);
       expect(res.body.id).toBeTruthy();

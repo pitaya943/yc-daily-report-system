@@ -15,6 +15,7 @@ import {
   validateLedgerCategory,
   validateLedgerDate,
   validateLedgerDescription,
+  validateLedgerNote,
   validateLedgerPayerOnIncome,
   validateLedgerType,
   ValidationMessages,
@@ -86,6 +87,7 @@ export class LedgerService {
       amount: number;
       category?: string;
       description: string;
+      note?: string;
       payerAccountId?: string;
     },
   ) {
@@ -96,6 +98,7 @@ export class LedgerService {
       validateLedgerAmount(body.amount),
       validateLedgerDescription(body.description),
       validateLedgerCategory(body.category),
+      validateLedgerNote(body.note),
       validateLedgerPayerOnIncome(body.type, body.payerAccountId),
     ]) {
       if (err) throwFieldBadRequest(err);
@@ -108,6 +111,7 @@ export class LedgerService {
         amount: body.amount,
         category: body.category ?? null,
         description: body.description.trim(),
+        note: body.note?.trim() ? body.note.trim() : null,
         payer_account_id:
           body.type === 'EXPENSE' ? body.payerAccountId ?? null : null,
       })
@@ -170,7 +174,7 @@ export class LedgerService {
       throw new NotFoundException(ValidationMessages.ledgerEntryNotFound);
     }
     if (row.has_ever_had_evidence) {
-      throw new BadRequestException('此紀錄有證據檔案，不能刪除，只能作廢');
+      throw new BadRequestException(ValidationMessages.ledgerEvidenceDeleteBlocked);
     }
     if (row?.voided_at) {
       throw new BadRequestException(ValidationMessages.ledgerRecordVoided);

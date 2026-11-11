@@ -17,6 +17,8 @@ import { ExportService } from '../export/export.service';
 import { BankService } from '../bank/bank.service';
 import {
   validateFixedSalary,
+  validateFixedSalaryAddBack,
+  validateOptionalBoolean,
   validatePayrollDateRange,
   ValidationMessages,
 } from '@yc/validation';
@@ -59,6 +61,14 @@ export class PayrollService {
     const { startDate, endDate } = body;
     const dateErr = validatePayrollDateRange(startDate, endDate);
     if (dateErr) throwFieldBadRequest(dateErr);
+    const tenthErr = validateOptionalBoolean(
+      body.is10thPayday,
+      'is10thPayday',
+      ValidationMessages.is10thPaydayConfirm,
+    );
+    if (tenthErr) throwFieldBadRequest(tenthErr);
+    const addBackErr = validateFixedSalaryAddBack(body.fixedSalaryAddBack);
+    if (addBackErr) throwFieldBadRequest(addBackErr);
     if (body.fixedSalaryManual) {
       for (const val of Object.values(body.fixedSalaryManual)) {
         const fixErr = validateFixedSalary(val);

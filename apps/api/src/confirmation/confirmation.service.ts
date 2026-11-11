@@ -9,7 +9,12 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { taipeiYmd } from '../common/taipei-time';
-import { ValidationMessages } from '@yc/validation';
+import {
+  validateOptionalFilterDate,
+  validateOptionalFilterZone,
+  ValidationMessages,
+} from '@yc/validation';
+import { throwFieldBadRequest } from '../common/field-error';
 
 @Injectable()
 export class ConfirmationService {
@@ -62,6 +67,13 @@ export class ConfirmationService {
     query?: { from?: string; to?: string; zone?: string },
   ) {
     this.assertAdminOrOwner(account);
+    for (const err of [
+      validateOptionalFilterDate(query?.from, 'from'),
+      validateOptionalFilterDate(query?.to, 'to'),
+      validateOptionalFilterZone(query?.zone),
+    ]) {
+      if (err) throwFieldBadRequest(err);
+    }
     const today = taipeiYmd();
     const start = query?.from ?? this.addDays(today, -30);
     const end = query?.to ?? today;
@@ -93,6 +105,31 @@ export class ConfirmationService {
         submitter: byId.get(r.submitter_id),
         archived: Boolean(byId.get(r.submitter_id)?.archived_at),
       }));
+  }
+
+  /**
+   * Batch ids are checked before any confirm or reject write.
+   * Spec has no batch sentence; nearest is 「找不到待確認回報」.
+   */
+  async assertReportIds(reportIds: unknown): Promise<string[]> {
+    const uuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (
+      !Array.isArray(reportIds) ||
+      reportIds.length === 0 ||
+      reportIds.some((id) => typeof id !== 'string' || !uuid.test(id))
+    ) {
+      throw new BadRequestException(ValidationMessages.confirmationNotFound);
+    }
+    const unique = [...new Set(reportIds as string[])];
+    const { data, error } = await this.db()
+      .from('daily_reports')
+      .select('id')
+      .in('id', unique);
+    if (error || (data?.length ?? 0) !== unique.length) {
+      throw new BadRequestException(ValidationMessages.confirmationNotFound);
+    }
+    return unique;
   }
 
   /** B-069 B-091 Q-038/Q-040: approves include archived submitters marked 封存 */

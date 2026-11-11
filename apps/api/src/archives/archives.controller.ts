@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ValidationMessages } from '@yc/validation';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentAccount } from '../common/current-account.decorator';
@@ -47,12 +49,24 @@ export class ArchivesController {
   @Post('daily')
   generateDaily(
     @CurrentAccount() account: SessionAccount,
-    @Body() body: { archiveDate?: string; source?: 'MANUAL' | 'AUTOMATIC' },
+    @Body()
+    body: {
+      archiveDate?: string;
+      type?: string;
+      source?: string;
+    },
   ) {
-    return this.archives.generateDaily(
-      account,
-      body.archiveDate,
-      body.source ?? 'MANUAL',
-    );
+    const type = body.type;
+    const source = body.source ?? 'MANUAL';
+    if (type !== 'DAILY' && type !== 'MONTHLY') {
+      throw new BadRequestException(ValidationMessages.archiveTypeAndDate);
+    }
+    if (!body.archiveDate || !/^\d{4}-\d{2}-\d{2}$/.test(body.archiveDate)) {
+      throw new BadRequestException(ValidationMessages.archiveTypeAndDate);
+    }
+    if (source !== 'MANUAL' && source !== 'AUTOMATIC') {
+      throw new BadRequestException(ValidationMessages.archiveTypeAndDate);
+    }
+    return this.archives.generateDaily(account, body.archiveDate, source, type);
   }
 }

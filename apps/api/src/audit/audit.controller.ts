@@ -2,9 +2,12 @@ import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { SupabaseService } from '../supabase/supabase.service';
-import { ValidationMessages } from '@yc/validation';
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+import {
+  validateOptionalFilterAction,
+  validateOptionalFilterDate,
+  ValidationMessages,
+} from '@yc/validation';
+import { throwFieldBadRequest } from '../common/field-error';
 
 /** B-067 owner-only audit log read. */
 @Controller('audit')
@@ -17,14 +20,29 @@ export class AuditController {
   async listLog(
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('account') account?: string,
+    @Query('actionType') actionType?: string,
   ) {
-    if (from !== undefined && !DATE_RE.test(from)) {
-      throw new BadRequestException(ValidationMessages.filterInvalid);
-    }
-    if (to !== undefined && !DATE_RE.test(to)) {
-      throw new BadRequestException(ValidationMessages.filterInvalid);
+    for (const err of [
+      validateOptionalFilterDate(from, 'from'),
+      validateOptionalFilterDate(to, 'to'),
+      validateOptionalFilterAction(actionType),
+    ]) {
+      if (err) throwFieldBadRequest(err);
     }
     const db = this.supabase.getServiceClient();
+    let actorId: string | undefined;
+    if (account != null && account !== '') {
+      const { data: actor } = await db
+        .from('accounts')
+        .select('id')
+        .eq('display_name', account)
+        .maybeSingle();
+      if (!actor) {
+        throw new BadRequestException(ValidationMessages.filterInvalid);
+      }
+      actorId = actor.id as string;
+    }
     let q = db
       .from('audit_log')
       .select('id, action_type, description, occurred_at')
@@ -35,6 +53,12 @@ export class AuditController {
     }
     if (to) {
       q = q.lte('occurred_at', `${to}T23:59:59+08:00`);
+    }
+    if (actorId) {
+      q = q.eq('actor_id', actorId);
+    }
+    if (actionType) {
+      q = q.eq('action_type', actionType);
     }
     const { data, error } = await q;
     if (error) {

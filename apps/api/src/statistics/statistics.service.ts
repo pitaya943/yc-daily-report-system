@@ -4,7 +4,11 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { ExportService } from '../export/export.service';
-import { ValidationMessages, validatePayrollDateRange } from '@yc/validation';
+import {
+  ValidationMessages,
+  validateOptionalBoolean,
+  validatePayrollDateRange,
+} from '@yc/validation';
 import { throwFieldBadRequest } from '../common/field-error';
 
 @Injectable()
@@ -29,6 +33,12 @@ export class StatisticsService {
     }
     const rangeErr = validatePayrollDateRange(body.startDate, body.endDate);
     if (rangeErr) throwFieldBadRequest(rangeErr);
+    const tenthErr = validateOptionalBoolean(
+      body.is10thPayday,
+      'is10thPayday',
+      ValidationMessages.is10thPaydayConfirm,
+    );
+    if (tenthErr) throwFieldBadRequest(tenthErr);
     const { data: shares } = await this.db()
       .from('report_shares')
       .select('item_code, share_units, report_id')

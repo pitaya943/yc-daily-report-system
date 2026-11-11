@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -8,7 +7,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ValidationMessages } from '@yc/validation';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentAccount } from '../common/current-account.decorator';
@@ -37,32 +35,24 @@ export class ConfirmationController {
   }
 
   @Post('batch/reject')
-  batchReject(
+  async batchReject(
     @CurrentAccount() account: SessionAccount,
     @Body() body: { reportIds: string[] },
   ) {
-    if (!body.reportIds?.length) {
-      throw new BadRequestException(ValidationMessages.accountRequired);
-    }
+    const ids = await this.confirmation.assertReportIds(body?.reportIds);
     return Promise.all(
-      (body.reportIds ?? []).map((id) =>
-        this.confirmation.rejectReport(account, id),
-      ),
+      ids.map((id) => this.confirmation.rejectReport(account, id)),
     );
   }
 
   @Post('batch/confirm')
-  batchConfirm(
+  async batchConfirm(
     @CurrentAccount() account: SessionAccount,
     @Body() body: { reportIds: string[] },
   ) {
-    if (!body.reportIds?.length) {
-      throw new BadRequestException(ValidationMessages.accountRequired);
-    }
+    const ids = await this.confirmation.assertReportIds(body?.reportIds);
     return Promise.all(
-      (body.reportIds ?? []).map((id) =>
-        this.confirmation.confirmReport(account, id),
-      ),
+      ids.map((id) => this.confirmation.confirmReport(account, id)),
     );
   }
 

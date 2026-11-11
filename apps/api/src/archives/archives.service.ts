@@ -73,17 +73,18 @@ export class ArchivesService {
     account: SessionAccount,
     archiveDate?: string,
     source: 'MANUAL' | 'AUTOMATIC' = 'MANUAL',
+    archiveType: 'DAILY' | 'MONTHLY' = 'DAILY',
   ) {
     this.assertAdminOrOwner(account);
     if (archiveDate && !/^\d{4}-\d{2}-\d{2}$/.test(archiveDate)) {
-      throw new BadRequestException('請選擇報表類型與日期');
+      throw new BadRequestException(ValidationMessages.archiveTypeAndDate);
     }
     const date = archiveDate ?? taipeiYmd();
     if (source === 'AUTOMATIC') {
       const { data: dup } = await this.db()
         .from('archives')
         .select('id')
-        .eq('type', 'DAILY')
+        .eq('type', archiveType)
         .eq('archive_date', date)
         .eq('source', 'AUTOMATIC')
         .maybeSingle();
@@ -97,15 +98,17 @@ export class ArchivesService {
             await this.db()
               .from('archives')
               .select('id', { count: 'exact', head: true })
-              .eq('type', 'DAILY')
+              .eq('type', archiveType)
               .eq('archive_date', date)
               .eq('source', 'MANUAL')
           ).count ?? 0
         : 0;
     const zones = await this.confirmedCountsByZone(date);
     const xlsx = await this.exports.buildArchiveWorkbook(date, zones);
-    const pdf = await this.exports.buildArchivePdf(date, '日報歸檔檔案庫');
-    const base = `daily/${date}-${source.toLowerCase()}-${Number(suffix) + 1}`;
+    const pdfLabel = archiveType === 'MONTHLY' ? '月報歸檔檔案庫' : '日報歸檔檔案庫';
+    const pdf = await this.exports.buildArchivePdf(date, pdfLabel);
+    const folder = archiveType === 'MONTHLY' ? 'monthly' : 'daily';
+    const base = `${folder}/${date}-${source.toLowerCase()}-${Number(suffix) + 1}`;
     const xlsxPath = `${base}.xlsx`;
     const pdfPath = `${base}.pdf`;
     const client = this.supabase.getServiceClient();
@@ -121,7 +124,7 @@ export class ArchivesService {
     const { data, error } = await this.db()
       .from('archives')
       .insert({
-        type: 'DAILY',
+        type: archiveType,
         archive_date: date,
         source,
         manual_suffix: source === 'MANUAL' ? Number(suffix) + 1 : null,

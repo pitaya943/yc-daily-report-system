@@ -26,6 +26,7 @@ import {
   validateSwitchRole,
   validateBigMeterFlag,
   validateUninsuredExemptFlag,
+  validateOptionalBoolean,
 } from '@yc/validation';
 import { throwFieldBadRequest } from '../common/field-error';
 
@@ -530,6 +531,12 @@ export class AccountsService {
       patch.fixed_salary = body.fixedSalary;
     }
     if (body.payFixedEveryPeriod !== undefined) {
+      const everyErr = validateOptionalBoolean(
+        body.payFixedEveryPeriod,
+        'payFixedEveryPeriod',
+        ValidationMessages.payFixedEveryPeriodConfirm,
+      );
+      if (everyErr) throwFieldBadRequest(everyErr);
       patch.pay_fixed_every_period = body.payFixedEveryPeriod;
     }
     if (body.uninsuredExempt !== undefined) {
@@ -611,6 +618,13 @@ export class AccountsService {
     );
     const offErr = validateRetentionOffset(body.offsetNtd);
     if (offErr) throwFieldBadRequest(offErr);
+    if (
+      !Number.isInteger(body.calendarYear) ||
+      body.calendarYear < 2000 ||
+      body.calendarYear > 9999
+    ) {
+      throw new BadRequestException(ValidationMessages.yearEndRequired);
+    }
     await this.db()
       .from('retention_offsets')
       .upsert({

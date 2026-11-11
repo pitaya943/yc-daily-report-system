@@ -25,7 +25,7 @@ export class RetentionService {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     if (!Number.isInteger(calendarYear) || calendarYear < 2000) {
-      throw new BadRequestException('請選擇要結算的年度');
+      throw new BadRequestException(ValidationMessages.yearEndRequired);
     }
     const { data: existing } = await this.db()
       .from('retention_year_end_settlements')

@@ -28,7 +28,14 @@ export default function ArchivesPage() {
   }
 
   async function generate() {
-    await apiSend('/archives/daily', 'POST', {});
+    const archiveDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Taipei',
+    }).format(new Date());
+    await apiSend('/archives/daily', 'POST', {
+      archiveDate,
+      type: 'DAILY',
+      source: 'MANUAL',
+    });
     await reload();
   }
 

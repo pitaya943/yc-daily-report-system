@@ -137,6 +137,39 @@ export function validateSettingsTabName(name: string | undefined): FieldError | 
   return null;
 }
 
+/** Optional boolean. Spec rows whose error cell is an em dash use the confirm-flag sentence. */
+export function validateOptionalBoolean(
+  value: unknown,
+  field: string,
+  message: string,
+): FieldError | null {
+  if (value === undefined) return null;
+  if (typeof value !== 'boolean') {
+    return { field, message };
+  }
+  return null;
+}
+
+/** L318 — map of account id to boolean, rejected before payroll writes. */
+export function validateFixedSalaryAddBack(value: unknown): FieldError | null {
+  if (value === undefined) return null;
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return {
+      field: 'fixedSalaryAddBack',
+      message: ValidationMessages.fixedSalaryAddBackConfirm,
+    };
+  }
+  for (const entry of Object.values(value as Record<string, unknown>)) {
+    if (typeof entry !== 'boolean') {
+      return {
+        field: 'fixedSalaryAddBack',
+        message: ValidationMessages.fixedSalaryAddBackConfirm,
+      };
+    }
+  }
+  return null;
+}
+
 export function validateUnitPrice(price: number): FieldError | null {
   if (price < 0 || !Number.isFinite(price)) {
     return { field: 'price', message: ValidationMessages.unitPriceRange };

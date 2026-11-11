@@ -44,6 +44,7 @@ export class LedgerController {
       amount: number;
       category?: string;
       description: string;
+      note?: string;
       payerAccountId?: string;
     },
   ) {
