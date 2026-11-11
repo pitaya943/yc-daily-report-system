@@ -23,6 +23,9 @@ export class RetentionService {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
       throw new ForbiddenException();
     }
+    if (!Number.isInteger(calendarYear) || calendarYear < 2000) {
+      throw new BadRequestException('請選擇要結算的年度');
+    }
     const { data: existing } = await this.db()
       .from('retention_year_end_settlements')
       .select('id')

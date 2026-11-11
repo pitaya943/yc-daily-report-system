@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -73,6 +74,9 @@ export class ArchivesService {
     source: 'MANUAL' | 'AUTOMATIC' = 'MANUAL',
   ) {
     this.assertAdminOrOwner(account);
+    if (archiveDate && !/^\d{4}-\d{2}-\d{2}$/.test(archiveDate)) {
+      throw new BadRequestException('請選擇報表類型與日期');
+    }
     const date = archiveDate ?? taipeiYmd();
     if (source === 'AUTOMATIC') {
       const { data: dup } = await this.db()

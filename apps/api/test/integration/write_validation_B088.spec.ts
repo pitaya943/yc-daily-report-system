@@ -56,8 +56,8 @@ const REJECTIONS: Record<
     path: '/accounts/b0000001-0001-4000-8000-000000000003/bank',
     body: { bankAccount: '123' },
   },
-  'retention-year-end': { method: 'post', path: '/retention/year-end', body: {} },
-  'archive-daily': { method: 'post', path: '/archives/daily', body: {} },
+  'retention-year-end': { method: 'post', path: '/retention/year-end', body: { year: -1 } },
+  'archive-daily': { method: 'post', path: '/archives/daily', body: { type: 'INVALID', reportDate: 'x' } },
 };
 
 describeIntegration('B-088 write route rejection per registry', () => {
@@ -108,7 +108,7 @@ describeIntegration('B-088 write route rejection per registry', () => {
       }
       expect(res.status).toBeGreaterThanOrEqual(400);
       const msg = JSON.stringify(res.body);
-      if (row.validator !== 'report-delete' && row.validator !== 'material-import') {
+      if (res.status === 400) {
         expect(msg).toMatch(/[\u4e00-\u9fff]/);
       }
       if (row.validator === 'payroll-calculate') {

@@ -105,7 +105,7 @@ export class MaterialsService {
         applicant_id: account.id,
         material_id: body.materialId,
         quantity: body.quantity,
-        note: body.note?.trim().slice(0, 50) || null,
+        note: body.note ? String(body.note).trim().slice(0, 50) || null : null,
         status: 'PENDING',
       })
       .select('id')
