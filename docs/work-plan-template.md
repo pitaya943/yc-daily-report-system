@@ -1,7 +1,7 @@
 # 分工計畫（一頁） / Work plan (one page)
 
-Kuei decision 2026-11-11 19:47. Copy this page per task. Fill every blank before work starts. This file is the single source for the work plan. `AGENTS.md` only links here.
-Kuei 決定 2026-11-11 19:47。每個任務複製這一頁。開工前填完每一個空格。分工計畫以本檔為唯一來源。`AGENTS.md` 只連結到這裡。
+Kuei decision 2026-11-11 19:47. Copy this page per task. Fill every blank before work starts. This file is the single source of the full work plan. `AGENTS.md` keeps only the short summary and the link.
+Kuei 決定 2026-11-11 19:47。每個任務複製這一頁。開工前填完每一個空格。完整分工計畫以本檔為唯一來源。`AGENTS.md` 只留短摘要與連結。
 
 Roles / 角色：見 [`AGENTS.md`](../AGENTS.md)「審查深度 / Review depth」。見該節，不要在這裡再寫一次。See that section. Do not copy the sentence here.
 

@@ -41,7 +41,9 @@
 
 ## 分工計畫（一頁） / Work plan (one page)
 
-全文與模型、流程、表格：[`docs/work-plan-template.md`](docs/work-plan-template.md)。以該檔為準。Full text, including flow, models, and tables: that file. That file wins.
+Flow / 流程: Alex drafts → Chief reviews → Kuei approves the done-when → independent tickets run in parallel. 可並行的工單同時做。
+Model / 模型: Never Opus. Fix rounds use a stronger model; if none is stronger, keep the same model and record it. 修復輪用更強的模型；沒有更強的就沿用同一模型並記錄。Verification uses a different model family. 驗證用不同的模型家族。
+Source of truth / 準則: [docs/work-plan-template.md](docs/work-plan-template.md). 以 docs 檔為準 / the docs file wins.
 
 ## 開發規則 / Development rules
 
@@ -66,4 +68,10 @@ Kuei decisions 2026-11-11 19:57、20:10、20:22、20:51（via Chief）。規格�
 
 ## Docs / 文件
 
-六條文件規則的全文：[docs/README.md](docs/README.md)。本節只留連結；以該檔為準。Full text of the six docs rules: that file. This section is only the link. That file wins.
+Detail / 細則: [docs/README.md](docs/README.md). If this summary and `docs/` disagree, docs wins / 以 docs 檔為準. In-repo docs are bilingual EN + 繁體中文 side by side; identifiers stay untranslated / 文件中英並列，識別名稱不翻譯。
+1. Single source / 單一來源: one maintained file per fact; other files link. Work-plan source is `docs/work-plan-template.md`. `AGENTS.md` keeps only the short summary and the link. Approved plans are `docs/work-plans/<id>.md`. When the source changes, update the `AGENTS.md` summary in the same PR. 每個事實一個維護檔，其他檔只連結。分工計畫來源是 `docs/work-plan-template.md`。`AGENTS.md` 只留短摘要與連結。核准後的計畫存 `docs/work-plans/<id>.md`。來源變更時，同一 PR 更新 `AGENTS.md` 摘要。
+2. Boundary / 分界: `AGENTS.md` is standing rules only. Templates and project data live under `docs/`. `README.md` is for humans. `AGENTS.md` 只放常規。範本與資料在 `docs/`。`README.md` 給人看。
+3. Decisions / 決策: append a row to `docs/decisions.md` (問題｜選擇｜理由｜日期). A change is a new row that names the row it replaces. Keep this table until it grows, then switch to MADR files. 只追加列。要改就新增一列並指出被取代的列。表格先留著，變長再改 MADR 檔。
+4. Same PR / 同一 PR: update the owning doc in the same PR as a change to behaviour, a public interface, or a process. This is not limited to the behaviour spec. On top of that, a spec change is made in that same PR and is checked by tests. The spec is living and is not frozen. Derived files are regenerated in that PR, not hand-edited. 行為、公開介面或流程變更時，同一 PR 更新所屬文件，不只行為規格。在這條之上，規格變更也在同一 PR，並由測試檢查。規格是活的，不凍結。衍生檔在該 PR 重新產生，不手改。
+5. CI / 檢查: pull requests run markdownlint and lychee on `AGENTS.md`, `CLAUDE.md`, `README.md`, and `docs/**`. The PR template is the checklist. There is no CODEOWNERS file. A command example that the docs claim is runnable must be run in CI. PR 對這些 SOP 文件跑 markdownlint 與 lychee。PR 範本就是 checklist。沒有 CODEOWNERS。文件宣稱可執行的指令範例必須在 CI 裡跑。
+6. Vera / 驗證: before PASS, Vera checks the owning file, the `AGENTS.md` summary, that no parallel source was added, that spec citations still resolve, and that inventory citations still resolve (spec source, file:line, and test name). The inventory path is development rule 5. Vera does not write a second product doc. PASS 前核對所屬檔、`AGENTS.md` 摘要、沒有平行來源、規格引用仍對得上，以及盤點表引用（規格出處、file:line、測試名稱）仍對得上。盤點表路徑見開發規則第 5 條。Vera 不另寫一份產品文件。
