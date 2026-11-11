@@ -119,7 +119,11 @@ const REJECTIONS: Record<
     method: 'delete',
     path: '/materials/admin/items/00000000-0000-4000-8000-000000000099',
   },
-  'material-reset': { method: 'post', path: '/materials/admin/reset', body: {} },
+  'material-reset': {
+    method: 'post',
+    path: '/materials/admin/reset',
+    body: { confirm: false },
+  },
   'material-quarantine-a': {
     method: 'post',
     path: '/materials/admin/items/00000000-0000-4000-8000-000000000099/quarantine/keep-a',

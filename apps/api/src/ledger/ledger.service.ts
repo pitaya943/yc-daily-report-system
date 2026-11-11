@@ -165,8 +165,11 @@ export class LedgerService {
       .from('ledger_entries')
       .select('has_ever_had_evidence, voided_at')
       .eq('id', entryId)
-      .single();
-    if (row?.has_ever_had_evidence) {
+      .maybeSingle();
+    if (!row) {
+      throw new NotFoundException(ValidationMessages.ledgerEntryNotFound);
+    }
+    if (row.has_ever_had_evidence) {
       throw new BadRequestException('此紀錄有證據檔案，不能刪除，只能作廢');
     }
     if (row?.voided_at) {

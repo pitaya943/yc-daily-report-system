@@ -424,7 +424,7 @@ describeIntegration('Vera round 4 — failing acceptance tests (step 1)', () => 
     const res = await owner.post(`/accounts/${userId}/role`).send({ role: 'ADMIN' });
     expect(res.status).toBe(400);
     expect(JSON.stringify(res.body)).toContain(SPEC.bigMeterBeforeAdmin);
-    await db.from('accounts').update({ big_meter: false }).eq('id', userId);
+    await db.from('accounts').update({ big_meter: true, role: 'USER' }).eq('id', userId);
   });
 
   it('[R4-5] reject TRANSFER without bank account', async () => {

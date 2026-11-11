@@ -372,6 +372,14 @@ export class MaterialsService {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
+    const { data: row } = await this.db()
+      .from('materials')
+      .select('id')
+      .eq('id', id)
+      .maybeSingle();
+    if (!row) {
+      throw new NotFoundException(ValidationMessages.materialNotFound);
+    }
     await this.db()
       .from('material_requests')
       .delete()
@@ -600,9 +608,12 @@ export class MaterialsService {
   }
 
   /** B-036 reset catalogue quantities to 0 and clear comparison label. */
-  async resetInventory(account: SessionAccount) {
+  async resetInventory(account: SessionAccount, confirm?: boolean) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
       throw new ForbiddenException(ValidationMessages.accessDenied);
+    }
+    if (confirm !== true) {
+      throw new BadRequestException('請確認重設材料庫存');
     }
     await this.db()
       .from('materials')

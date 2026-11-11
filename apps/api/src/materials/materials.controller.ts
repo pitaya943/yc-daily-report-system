@@ -126,8 +126,11 @@ export class MaterialsController {
 
   @Post('admin/reset')
   @Roles('ADMIN', 'OWNER')
-  reset(@CurrentAccount() account: SessionAccount) {
-    return this.materials.resetInventory(account);
+  reset(
+    @CurrentAccount() account: SessionAccount,
+    @Body() body: { confirm?: boolean },
+  ) {
+    return this.materials.resetInventory(account, body?.confirm);
   }
 
   @Post('admin/items/:id/quarantine/keep-a')
