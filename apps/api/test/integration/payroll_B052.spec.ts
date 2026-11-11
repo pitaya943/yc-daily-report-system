@@ -29,6 +29,16 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
     await db
       .from('unit_prices')
       .upsert({ price_set: 'WEST', item_code: 'direct_13', price: 120 });
+    await db
+      .from('accounts')
+      .update({
+        fixed_salary: 0,
+        insurance_deduction: 0,
+        pay_fixed_every_period: false,
+        uninsured_exempt: false,
+        uninsured_rate_override: null,
+      })
+      .eq('id', 'b0000001-0001-4000-8000-000000000003');
   });
 
   it('calculates payroll with non-zero gross for confirmed west report', async () => {
