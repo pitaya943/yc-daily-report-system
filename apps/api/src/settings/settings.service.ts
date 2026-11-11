@@ -8,6 +8,7 @@ import {
   validateGlobalRetentionRate,
   validateRetentionCap,
   validateUninsuredRate,
+  validateSettingsTabName,
   validateUnitPrice,
 } from '@yc/validation';
 
@@ -120,7 +121,11 @@ export class SettingsService {
   ) {
     this.assertAdmin(account);
     const row: Record<string, unknown> = {};
-    if (patch.tabName1 !== undefined) row.tab_name_1 = patch.tabName1;
+    if (patch.tabName1 !== undefined) {
+      const tabErr = validateSettingsTabName(patch.tabName1);
+      if (tabErr) throw new BadRequestException(tabErr.message);
+      row.tab_name_1 = patch.tabName1;
+    }
     if (patch.uninsuredRateWest !== undefined) {
       const err = validateUninsuredRate(patch.uninsuredRateWest);
       if (err) throw new BadRequestException(err.message);
@@ -153,7 +158,7 @@ export class SettingsService {
 
   private assertAdmin(account: SessionAccount) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
   }
 }

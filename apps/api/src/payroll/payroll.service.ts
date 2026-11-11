@@ -14,7 +14,7 @@ import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { ExportService } from '../export/export.service';
 import { BankService } from '../bank/bank.service';
-import { validatePayrollDateRange } from '@yc/validation';
+import { validatePayrollDateRange, ValidationMessages } from '@yc/validation';
 
 const PAYROLL_BLOCK_MSG = '單價尚未設定完整，無法計算薪資，請先補齊單價';
 
@@ -35,7 +35,7 @@ export class PayrollService {
 
   private assertAdminOrOwner(account: SessionAccount) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
   }
 
@@ -353,7 +353,11 @@ export class PayrollService {
       .select('*')
       .eq('run_id', runId)
       .order('display_name_snapshot');
-    return { run, rows: rows ?? [] };
+    const masked = (rows ?? []).map((r) => ({
+      ...r,
+      bank_last4: this.bank.formatBankLast4(r.bank_last4 as string | null),
+    }));
+    return { run, rows: masked };
   }
 
   /** B-072 B-084 xlsx export for calculated run. */

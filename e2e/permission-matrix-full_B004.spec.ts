@@ -106,7 +106,6 @@ async function assertRow(
         return;
       case 'row-8':
       case 'row-38':
-      case 'row-39':
       case 'row-40':
       case 'row-41':
       case 'row-42':
@@ -124,6 +123,29 @@ async function assertRow(
             })
           ).status(),
         ).toBeLessThan(300);
+        return;
+      case 'row-39':
+        expect(
+          (
+            await adminReq.patch(
+              '/accounts/b0000001-0001-4000-8000-000000000002/financials',
+              { data: { fixedSalary: 1 } },
+            )
+          ).status(),
+        ).toBe(403);
+        const adminId = 'b0000001-0001-4000-8000-000000000002';
+        const mod = await ownerReq.patch(`/accounts/${adminId}/financials`, {
+          data: { fixedSalary: 7777 },
+        });
+        expect(mod.status()).toBeLessThan(300);
+        const check = await ownerReq.get('/accounts/manage');
+        const adminRow = (
+          check.json().accounts as Array<{ id: string; fixed_salary?: number }>
+        ).find((a) => a.id === adminId);
+        expect(adminRow?.fixed_salary).toBe(7777);
+        await ownerReq.patch(`/accounts/${adminId}/financials`, {
+          data: { fixedSalary: 0 },
+        });
         return;
       case 'row-9':
         expect(

@@ -14,7 +14,6 @@ const describeIntegration = integrationEnabled() ? describe : describe.skip;
 
 const SEED_ADMIN_ID = 'b0000001-0001-4000-8000-000000000002';
 const OWNER_ID = 'b0000001-0001-4000-8000-000000000001';
-
 describeIntegration('B-096 B-097 admin cannot manage admin via real routes', () => {
   let app: INestApplication;
   const agent = () => request.agent(app.getHttpServer());
@@ -124,6 +123,67 @@ describeIntegration('B-096 B-097 admin cannot manage admin via real routes', () 
 
     const denied = await latestAccessDenied(SEED_ADMIN_ID);
     expect(denied?.description).toContain('ACCOUNT_RESTORE');
+  });
+
+  it('B-096 ADMIN cannot PATCH financials on another ADMIN', async () => {
+    const a = agent();
+    await a.post('/auth/sign-in').send({ displayName: '種子管理員', password: SEED_PASSWORD });
+    const res = await a
+      .patch(`/accounts/${SEED_ADMIN_ID}/financials`)
+      .send({ paymentMethod: 'CASH' });
+    expect(res.status).toBe(403);
+    expect(String(res.body.message)).toMatch(/禁止/);
+    const denied = await latestAccessDenied(SEED_ADMIN_ID);
+    expect(denied?.description).toContain('ACCOUNT_UPDATE');
+  });
+
+  it('B-096 ADMIN cannot PATCH bank on another ADMIN', async () => {
+    const a = agent();
+    await a.post('/auth/sign-in').send({ displayName: '種子管理員', password: SEED_PASSWORD });
+    const res = await a
+      .patch(`/accounts/${SEED_ADMIN_ID}/bank`)
+      .send({ bankAccount: '12345678901234' });
+    expect(res.status).toBe(403);
+    expect(String(res.body.message)).toMatch(/禁止/);
+    const denied = await latestAccessDenied(SEED_ADMIN_ID);
+    expect(denied?.description).toContain('ACCOUNT_UPDATE');
+  });
+
+  it('B-096 ADMIN cannot set retention offset on another ADMIN', async () => {
+    const a = agent();
+    await a.post('/auth/sign-in').send({ displayName: '種子管理員', password: SEED_PASSWORD });
+    const res = await a
+      .patch(`/accounts/${SEED_ADMIN_ID}/retention-offset`)
+      .send({ calendarYear: 2026, offsetNtd: 0 });
+    expect(res.status).toBe(403);
+    expect(String(res.body.message)).toMatch(/禁止/);
+    const denied = await latestAccessDenied(SEED_ADMIN_ID);
+    expect(denied?.description).toContain('RETENTION_SET');
+    const db = app.get(SupabaseService).getServiceClient();
+    const { data } = await db
+      .from('retention_offsets')
+      .select('offset_ntd')
+      .eq('account_id', SEED_ADMIN_ID)
+      .eq('calendar_year', 2026)
+      .maybeSingle();
+    expect(data).toBeNull();
+  });
+
+  it('B-096 OWNER can PATCH financials on an ADMIN with read-back', async () => {
+    const db = app.get(SupabaseService).getServiceClient();
+    const o = agent();
+    await o.post('/auth/sign-in').send({ displayName: 'Kuei', password: SEED_PASSWORD });
+  const res = await o
+      .patch(`/accounts/${SEED_ADMIN_ID}/financials`)
+      .send({ fixedSalary: 5000 });
+    expect(res.status).toBeLessThan(300);
+    const row = await db
+      .from('accounts')
+      .select('fixed_salary')
+      .eq('id', SEED_ADMIN_ID)
+      .single();
+    expect(row.data?.fixed_salary).toBe(5000);
+    await db.from('accounts').update({ fixed_salary: 0 }).eq('id', SEED_ADMIN_ID);
   });
 
   it('B-096 OWNER can archive and restore an ADMIN', async () => {

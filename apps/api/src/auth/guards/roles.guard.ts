@@ -10,6 +10,7 @@ import { Request } from 'express';
 import { AccountRole } from '../types';
 import { AuditService } from '../../audit/audit.service';
 import { AuthGuard } from './auth.guard';
+import { ValidationMessages } from '@yc/validation';
 
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: AccountRole[]) => SetMetadata(ROLES_KEY, roles);
@@ -42,7 +43,7 @@ export class RolesGuard implements CanActivate {
         account.displayName,
         OWNER_ADMIN_ACTION,
       );
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     return true;
   }

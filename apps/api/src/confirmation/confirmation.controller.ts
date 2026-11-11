@@ -34,22 +34,6 @@ export class ConfirmationController {
     return this.confirmation.listPendingBigMeter(account);
   }
 
-  @Post(':id/confirm')
-  confirm(
-    @CurrentAccount() account: SessionAccount,
-    @Param('id') id: string,
-  ) {
-    return this.confirmation.confirmReport(account, id);
-  }
-
-  @Post(':id/reject')
-  reject(
-    @CurrentAccount() account: SessionAccount,
-    @Param('id') id: string,
-  ) {
-    return this.confirmation.rejectReport(account, id);
-  }
-
   @Post('batch/reject')
   batchReject(
     @CurrentAccount() account: SessionAccount,
@@ -72,5 +56,21 @@ export class ConfirmationController {
         this.confirmation.confirmReport(account, id),
       ),
     );
+  }
+
+  @Post(':id/confirm')
+  confirm(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.confirmation.confirmReport(account, id);
+  }
+
+  @Post(':id/reject')
+  reject(
+    @CurrentAccount() account: SessionAccount,
+    @Param('id') id: string,
+  ) {
+    return this.confirmation.rejectReport(account, id);
   }
 }

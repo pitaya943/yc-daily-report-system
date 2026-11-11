@@ -6,6 +6,7 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
+import { ValidationMessages } from '@yc/validation';
 
 /** B-090 year-end settlement — releases YTD retention per account. */
 @Injectable()
@@ -21,7 +22,7 @@ export class RetentionService {
 
   async settleYear(account: SessionAccount, calendarYear: number) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     if (!Number.isInteger(calendarYear) || calendarYear < 2000) {
       throw new BadRequestException('請選擇要結算的年度');

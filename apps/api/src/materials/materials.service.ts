@@ -19,6 +19,7 @@ import {
   validateMaterialTab,
   validateMaterialQty,
   validateMaterialRequestNote,
+  validateMaterialSpecification,
 } from '@yc/validation';
 import { Workbook } from 'exceljs';
 
@@ -74,7 +75,7 @@ export class MaterialsService {
     body: { materialId: string; quantity: number; note?: string },
   ) {
     if (account.role !== 'USER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const qtyErr = validateMaterialRequestQty(body.quantity);
     if (qtyErr) throw new BadRequestException(qtyErr.message);
@@ -124,7 +125,7 @@ export class MaterialsService {
 
   async listMyRequests(account: SessionAccount) {
     if (account.role !== 'USER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const { data, error } = await this.db()
       .from('material_requests')
@@ -138,7 +139,7 @@ export class MaterialsService {
 
   async listPendingRequests(account: SessionAccount) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const { data: requests, error } = await this.db()
       .from('material_requests')
@@ -170,7 +171,7 @@ export class MaterialsService {
   /** B-056 BDD-002 BDD-003 via DB function + row locks */
   async approveRequest(account: SessionAccount, requestId: string) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const { data, error } = await this.db().rpc('approve_material_request', {
       p_request_id: requestId,
@@ -198,7 +199,7 @@ export class MaterialsService {
 
   async rejectRequest(account: SessionAccount, requestId: string) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const { data: req } = await this.db()
       .from('material_requests')
@@ -230,7 +231,7 @@ export class MaterialsService {
 
   /** B-065 cancel PENDING */
   async cancelRequest(account: SessionAccount, requestId: string) {
-    if (account.role !== 'USER') throw new ForbiddenException();
+    if (account.role !== 'USER') throw new ForbiddenException(ValidationMessages.accessDenied);
     const { data: req } = await this.db()
       .from('material_requests')
       .select('id, applicant_id, status')
@@ -263,7 +264,7 @@ export class MaterialsService {
     },
   ) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     for (const err of [
       validateMaterialName(body.name),
@@ -271,6 +272,7 @@ export class MaterialsService {
       validateMaterialCode(body.code),
       validateMaterialTab(body.tab),
       validateMaterialQty(body.remainingQty),
+      validateMaterialSpecification(body.specification),
     ]) {
       if (err) throw new BadRequestException(err.message);
     }
@@ -290,7 +292,9 @@ export class MaterialsService {
       })
       .select('id')
       .single();
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      throw new BadRequestException(ValidationMessages.materialSpecificationMax);
+    }
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
@@ -311,15 +315,23 @@ export class MaterialsService {
     },
   ) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const patch: Record<string, unknown> = {};
-    if (body.remainingQty != null) patch.remaining_qty = body.remainingQty;
+    if (body.remainingQty != null) {
+      const qtyErr = validateMaterialQty(body.remainingQty);
+      if (qtyErr) throw new BadRequestException(qtyErr.message);
+      patch.remaining_qty = body.remainingQty;
+    }
     if (body.cumulativeUsage != null) {
       patch.cumulative_usage = body.cumulativeUsage;
     }
     if (body.hidden != null) patch.hidden = body.hidden;
-    if (body.tab != null) patch.tab = body.tab;
+    if (body.tab != null) {
+      const tabErr = validateMaterialTab(body.tab);
+      if (tabErr) throw new BadRequestException(tabErr.message);
+      patch.tab = body.tab;
+    }
     if (patch.remaining_qty != null || patch.cumulative_usage != null) {
       const { data: cur } = await this.db()
         .from('materials')
@@ -331,7 +343,10 @@ export class MaterialsService {
         (patch.cumulative_usage as number) ?? cur?.cumulative_usage;
       patch.received_qty = Number(remaining) + Number(cumulative);
     }
-    await this.db().from('materials').update(patch).eq('id', id);
+    const { error } = await this.db().from('materials').update(patch).eq('id', id);
+    if (error) {
+      throw new BadRequestException(ValidationMessages.materialQtyRange);
+    }
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
@@ -343,7 +358,7 @@ export class MaterialsService {
 
   async adminDeleteMaterial(account: SessionAccount, id: string) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     await this.db()
       .from('material_requests')
@@ -426,7 +441,10 @@ export class MaterialsService {
     payload: { csvText?: string; fileBase64?: string },
   ) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
+    }
+    if (!fileName?.trim() || (!payload.csvText && !payload.fileBase64)) {
+      throw new BadRequestException(ValidationMessages.importFileInvalid);
     }
     const fileRows = fileName.toLowerCase().endsWith('.xlsx')
       ? await this.parseXlsxRows(
@@ -550,7 +568,7 @@ export class MaterialsService {
     desc: string,
   ) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     await this.db()
       .from('materials')
@@ -568,7 +586,7 @@ export class MaterialsService {
   /** B-036 reset catalogue quantities to 0 and clear comparison label. */
   async resetInventory(account: SessionAccount) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     await this.db()
       .from('materials')

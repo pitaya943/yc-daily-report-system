@@ -17,6 +17,7 @@ import {
   validateFixedSalary,
   validateInsuranceDeduction,
   validatePasswordLength,
+  validatePaymentMethod,
   validateRetentionOffset,
   validateUninsuredRate,
 } from '@yc/validation';
@@ -49,7 +50,7 @@ export class AccountsService {
       const { data } = await this.db()
         .from('accounts')
         .select(
-          'id, display_name, role, zone, big_meter, archived_at, bank_account_last4',
+          'id, display_name, role, zone, big_meter, archived_at, bank_account_last4, fixed_salary',
         )
         .order('display_name');
       return {
@@ -78,13 +79,31 @@ export class AccountsService {
         })),
       };
     }
-    throw new ForbiddenException();
+    throw new ForbiddenException(ValidationMessages.accessDenied);
+  }
+
+  /** B-096 — ADMIN may not modify another ADMIN or OWNER. */
+  private async rejectAdminModifyingPrivilegedTarget(
+    actor: SessionAccount,
+    targetId: string,
+    auditAction: string,
+  ) {
+    if (actor.role !== 'ADMIN' || targetId === actor.id) return;
+    const target = await this.getAccount(targetId);
+    if (target.role !== 'USER') {
+      await this.audit.logAccessDenied(
+        actor.id,
+        actor.displayName,
+        auditAction,
+      );
+      throw new ForbiddenException(ValidationMessages.accessDenied);
+    }
   }
 
   /** B-096 owner creates ADMIN with Auth user. */
   async createAdmin(actor: SessionAccount, displayName: string, password: string) {
     if (actor.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     return this.createAccount(actor, {
       displayName,
@@ -105,7 +124,7 @@ export class AccountsService {
     },
   ) {
     if (actor.role !== 'ADMIN' && actor.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     if (actor.role === 'ADMIN') {
       return this.createAccount(actor, {
@@ -160,7 +179,7 @@ export class AccountsService {
       email_confirm: true,
     });
     if (authErr || !authUser.user) {
-      throw new BadRequestException(authErr?.message ?? 'auth create failed');
+      throw new BadRequestException(ValidationMessages.accountCreateFailed);
     }
 
     const { data: row, error } = await this.db()
@@ -174,7 +193,12 @@ export class AccountsService {
       })
       .select('id, display_name, role')
       .single();
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      if (String(error.message).includes('duplicate')) {
+        throw new BadRequestException(ValidationMessages.displayNameDuplicate);
+      }
+      throw new BadRequestException(ValidationMessages.accountCreateFailed);
+    }
 
     await this.audit.write({
       actorId: actor.id,
@@ -254,11 +278,11 @@ export class AccountsService {
     role: 'USER' | 'ADMIN',
   ) {
     if (actor.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const target = await this.getAccount(targetId);
     if (target.role === 'OWNER') {
-      throw new BadRequestException();
+      throw new BadRequestException(ValidationMessages.cannotArchiveOwner);
     }
     if (role === 'ADMIN' && target.big_meter) {
       throw new BadRequestException(ValidationMessages.bigMeterBeforeAdmin);
@@ -284,7 +308,14 @@ export class AccountsService {
     actor: SessionAccount,
     currentPassword: string,
     newPassword: string,
+    newPasswordConfirm?: string,
   ) {
+    if (
+      newPasswordConfirm !== undefined &&
+      newPassword !== newPasswordConfirm
+    ) {
+      throw new BadRequestException(ValidationMessages.passwordMismatch);
+    }
     const pwErr = validatePasswordLength(newPassword);
     if (pwErr) throw new BadRequestException(pwErr.message);
     const { data: acct } = await this.db()
@@ -306,7 +337,9 @@ export class AccountsService {
       acct.auth_user_id,
       { password: newPassword },
     );
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      throw new BadRequestException(ValidationMessages.passwordCurrentIncorrect);
+    }
     await this.audit.write({
       actorId: actor.id,
       actorDisplayName: actor.displayName,
@@ -327,7 +360,7 @@ export class AccountsService {
         actor.displayName,
         'ACCOUNT_UPDATE',
       );
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const err = validateBankAccountDigits(bankAccount);
     if (err) throw new BadRequestException(err.message);
@@ -362,7 +395,7 @@ export class AccountsService {
   /** B-093 reveal full bank — logged BANK_REVEAL. */
   async revealBank(actor: SessionAccount, targetId: string) {
     if (actor.role !== 'OWNER' && actor.role !== 'ADMIN') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const { data, error } = await this.db()
       .from('accounts')
@@ -410,12 +443,28 @@ export class AccountsService {
     },
   ) {
     if (actor.role !== 'OWNER') {
-      throw new ForbiddenException('禁止存取');
+      await this.audit.logAccessDenied(
+        actor.id,
+        actor.displayName,
+        'ACCOUNT_UPDATE',
+      );
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const target = await this.getAccount(targetId);
-    if (target.role === 'OWNER') throw new ForbiddenException('禁止存取');
+    if (target.role === 'OWNER') {
+      throw new ForbiddenException(ValidationMessages.accessDenied);
+    }
+    await this.rejectAdminModifyingPrivilegedTarget(
+      actor,
+      targetId,
+      'ACCOUNT_UPDATE',
+    );
     const patch: Record<string, unknown> = {};
-    if (body.paymentMethod) patch.payment_method = body.paymentMethod;
+    if (body.paymentMethod !== undefined) {
+      const pmErr = validatePaymentMethod(body.paymentMethod);
+      if (pmErr) throw new BadRequestException(pmErr.message);
+      patch.payment_method = body.paymentMethod;
+    }
     if (body.insuranceDeduction !== undefined) {
       const err = validateInsuranceDeduction(
         body.insuranceDeduction,
@@ -460,12 +509,13 @@ export class AccountsService {
     body: { calendarYear: number; offsetNtd: number },
   ) {
     if (actor.role !== 'OWNER' && actor.role !== 'ADMIN') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
-    if (targetId !== actor.id && actor.role === 'ADMIN') {
-      const target = await this.getAccount(targetId);
-      if (target.role !== 'USER') throw new ForbiddenException();
-    }
+    await this.rejectAdminModifyingPrivilegedTarget(
+      actor,
+      targetId,
+      'RETENTION_SET',
+    );
     const offErr = validateRetentionOffset(body.offsetNtd);
     if (offErr) throw new BadRequestException(offErr.message);
     await this.db()

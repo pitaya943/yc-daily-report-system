@@ -33,7 +33,21 @@ const REJECTIONS: Record<
     path: '/reports/00000000-0000-4000-8000-000000000099',
   },
   'material-request': { method: 'post', path: '/materials/requests', body: { materialId: 'x', quantity: 0 } },
-  'material-import': { method: 'post', path: '/materials/admin/import' },
+  'material-admin-add': {
+    method: 'post',
+    path: '/materials/admin/items',
+    body: { name: 't', unit: '個', specification: 'x'.repeat(201) },
+  },
+  'material-admin-update': {
+    method: 'post',
+    path: '/materials/admin/items/c0000001-0001-4000-8000-000000000001',
+    body: { remainingQty: -2, tab: 99 },
+  },
+  'material-import': {
+    method: 'post',
+    path: '/materials/admin/import',
+    body: { fileName: '' },
+  },
   'payroll-calculate': {
     method: 'post',
     path: '/payroll/calculate',
@@ -42,19 +56,49 @@ const REJECTIONS: Record<
   'ledger-create': {
     method: 'post',
     path: '/ledger/entries',
-    body: { entryDate: '2026-11-10', type: 'INCOME', amount: 0, description: 'x' },
+    body: {
+      entryDate: '2026-11-10',
+      type: 'INCOME',
+      amount: 100,
+      description: '測試',
+      payerAccountId: 'b0000001-0001-4000-8000-000000000003',
+    },
   },
   'ledger-evidence': {
     method: 'post',
     path: '/ledger/entries/00000000-0000-4000-8000-000000000099/evidence',
   },
   'retention-cap': { method: 'patch', path: '/settings/retention-cap', body: { capNtd: -1 } },
+  'settings-system': {
+    method: 'patch',
+    path: '/settings/system',
+    body: { tabName1: 'x'.repeat(51) },
+  },
   'account-create-admin': { method: 'post', path: '/owner/admins', body: { displayName: '', password: 'x' } },
   'account-create-user': { method: 'post', path: '/accounts/users', body: { displayName: '', password: 'x' } },
   'bank-account': {
     method: 'patch',
     path: '/accounts/b0000001-0001-4000-8000-000000000003/bank',
     body: { bankAccount: '123' },
+  },
+  'account-financials': {
+    method: 'patch',
+    path: '/accounts/b0000001-0001-4000-8000-000000000003/financials',
+    body: { paymentMethod: 'WIRE' },
+  },
+  'retention-offset': {
+    method: 'patch',
+    path: '/accounts/b0000001-0001-4000-8000-000000000003/retention-offset',
+    body: { calendarYear: 2026, offsetNtd: 1.5 },
+  },
+  'password-change': {
+    method: 'post',
+    path: '/accounts/me/password',
+    body: {
+      currentPassword: SEED_PASSWORD,
+      newPassword: 'newpass01',
+      newPasswordConfirm: 'mismatch1',
+    },
   },
   'retention-year-end': { method: 'post', path: '/retention/year-end', body: { year: -1 } },
   'archive-daily': { method: 'post', path: '/archives/daily', body: { archiveDate: 'not-a-date' } },
@@ -94,6 +138,9 @@ describeIntegration('B-088 write route rejection per registry', () => {
             ? await authedAgent('user')
             : row.path.startsWith('/owner/')
               ? await authedAgent('owner')
+              : row.validator === 'account-financials' ||
+                  row.validator === 'bank-account'
+                ? await authedAgent('owner')
               : row.path === '/accounts/users'
                 ? await authedAgent('admin')
                 : await authedAgent('admin');
@@ -115,7 +162,13 @@ describeIntegration('B-088 write route rejection per registry', () => {
         expect(msg).toContain(ValidationMessages.payrollEndBeforeStart);
       }
       if (row.validator === 'ledger-create') {
-        expect(msg).toContain(ValidationMessages.ledgerAmountPositive);
+        expect(msg).toContain(ValidationMessages.ledgerPayerIncomeOnly);
+      }
+      if (row.validator === 'password-change') {
+        expect(msg).toContain(ValidationMessages.passwordMismatch);
+      }
+      if (row.validator === 'material-import') {
+        expect(msg).toContain(ValidationMessages.importFileInvalid);
       }
     });
   }

@@ -54,6 +54,16 @@ export function validateLedgerCategory(category: string | undefined): FieldError
   return null;
 }
 
+export function validateLedgerPayerOnIncome(
+  type: string,
+  payerAccountId: string | undefined,
+): FieldError | null {
+  if (type === 'INCOME' && payerAccountId) {
+    return { field: 'payerAccountId', message: ValidationMessages.ledgerPayerIncomeOnly };
+  }
+  return null;
+}
+
 export function validateLedgerNote(note: string | undefined): FieldError | null {
   if (note == null || note === '') return null;
   if (note.length > 100) {

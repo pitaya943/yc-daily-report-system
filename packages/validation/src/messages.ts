@@ -62,4 +62,11 @@ export const ValidationMessages = {
   customItemPrice: '自訂工項單價須為 0 或正整數',
   importFileInvalid:
     '請上傳 xlsx 或 csv 檔，且標題列須含「材料編號」與「實領量」',
+  accessDenied: '禁止存取',
+  sessionRequired: '請先登入',
+  accountCreateFailed: '無法建立帳戶，請稍後再試',
+  ledgerPayerIncomeOnly: '僅支出可指定支出者',
+  ledgerRecordVoided: '此紀錄已作廢',
+  materialSpecificationMax: '規格最多 200 個字',
+  materialTabNameMax: '分頁名稱最多 50 個字',
 } as const;

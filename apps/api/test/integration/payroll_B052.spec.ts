@@ -66,7 +66,7 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
       .eq('run_id', calc.body.runId);
     const west = (rows ?? []).find((r) => String(r.display_name_snapshot).includes('種子西區'));
     expect(west).toBeTruthy();
-    expect(Number(west!.gross)).toBeGreaterThan(0);
-    expect(Number(west!.final_pay)).toBeGreaterThan(0);
+    expect(Number(west!.gross)).toBe(1200);
+    expect(Number(west!.final_pay)).toBe(964);
   });
 });

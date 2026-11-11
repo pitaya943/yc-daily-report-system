@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { loadConfig } from '../../config';
+import { ValidationMessages } from '@yc/validation';
 
 /** B-079 — 30-minute idle session; no remember-me extension. */
 @Injectable()
@@ -14,7 +15,7 @@ export class AuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const account = req.session?.account;
     if (!account) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException(ValidationMessages.sessionRequired);
     }
     const cfg = loadConfig();
     const idleMs = cfg.sessionIdleMinutes * 60 * 1000;
@@ -22,7 +23,7 @@ export class AuthGuard implements CanActivate {
     const now = Date.now();
     if (now - last > idleMs) {
       req.session.destroy(() => undefined);
-      throw new UnauthorizedException();
+      throw new UnauthorizedException(ValidationMessages.sessionRequired);
     }
     req.session.lastActivityMs = now;
     return true;

@@ -4,6 +4,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { ExportService } from '../export/export.service';
+import { ValidationMessages } from '@yc/validation';
 
 @Injectable()
 export class StatisticsService {
@@ -118,7 +119,7 @@ export class StatisticsService {
     body: { startDate: string; endDate: string },
   ) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const { data: shares } = await this.db()
       .from('report_shares')

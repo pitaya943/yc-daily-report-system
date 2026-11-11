@@ -40,6 +40,21 @@ describeIntegration('B-081 F6 bank field unreadable without key', () => {
         String((a as { display_name?: string }).display_name ?? '').includes('種子西區'),
       );
       expect(acct?.bank_account_last4).toBe(ValidationMessages.bankDisplayUnreadable);
+
+      const calc = await agent.post('/payroll/calculate').send({
+        startDate: '2020-01-01',
+        endDate: '2099-12-31',
+        is10thPayday: false,
+      });
+      if (calc.status < 300 && calc.body.runId) {
+        const detail = await agent.get(`/payroll/runs/${calc.body.runId}`);
+        expect(detail.status).toBe(200);
+        for (const row of detail.body.rows as Array<{ bank_last4?: string }>) {
+          if (row.bank_last4 != null && row.bank_last4 !== '') {
+            expect(row.bank_last4).toBe(ValidationMessages.bankDisplayUnreadable);
+          }
+        }
+      }
     } finally {
       await app.close();
     }

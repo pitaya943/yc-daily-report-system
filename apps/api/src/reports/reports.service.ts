@@ -122,7 +122,7 @@ export class ReportsService {
     },
   ) {
     if (account.role !== 'USER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const today = taipeiYmd();
     const dateErr = validateReportDate(body.reportDate, today);
@@ -227,7 +227,7 @@ export class ReportsService {
         throw new ForbiddenException(ValidationMessages.confirmedReportNoEdit);
       }
       if (report.status !== 'PENDING' && report.status !== 'REJECTED') {
-        throw new ForbiddenException();
+        throw new ForbiddenException(ValidationMessages.accessDenied);
       }
     }
 
@@ -316,7 +316,7 @@ export class ReportsService {
         throw new ForbiddenException(ValidationMessages.confirmedReportNoEdit);
       }
     } else if (!isAdmin) {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
 
     const wasConfirmed = report.status === 'CONFIRMED';
@@ -468,9 +468,9 @@ export class ReportsService {
         .eq('report_id', reportId)
         .eq('account_id', account.id)
         .maybeSingle();
-      if (!collab) throw new ForbiddenException();
+      if (!collab) throw new ForbiddenException(ValidationMessages.accessDenied);
     } else if (!isSubmitter && !isAdmin) {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
 
     const { data: items } = await this.db()
@@ -548,7 +548,7 @@ export class ReportsService {
   /** B-063 admin history */
   async listAdminHistory(account: SessionAccount, query?: { status?: string }) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     let q = this.db()
       .from('daily_reports')

@@ -9,6 +9,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { taipeiYmd } from '../common/taipei-time';
+import { ValidationMessages } from '@yc/validation';
 
 @Injectable()
 export class ConfirmationService {
@@ -23,7 +24,7 @@ export class ConfirmationService {
 
   private assertAdminOrOwner(account: SessionAccount) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
   }
 

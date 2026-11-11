@@ -51,6 +51,24 @@ export function validateInsuranceDeduction(n: number, enrolled: boolean): FieldE
   return null;
 }
 
+export function validatePaymentMethod(
+  method: string | undefined,
+): FieldError | null {
+  if (method == null) return null;
+  if (method !== 'TRANSFER' && method !== 'CASH') {
+    return { field: 'paymentMethod', message: ValidationMessages.paymentRequired };
+  }
+  return null;
+}
+
+export function validateSettingsTabName(name: string | undefined): FieldError | null {
+  if (name == null) return null;
+  if (name.length > 50) {
+    return { field: 'tabName1', message: ValidationMessages.materialTabNameMax };
+  }
+  return null;
+}
+
 export function validateUnitPrice(price: number): FieldError | null {
   if (price < 0 || !Number.isFinite(price)) {
     return { field: 'price', message: ValidationMessages.unitPriceRange };

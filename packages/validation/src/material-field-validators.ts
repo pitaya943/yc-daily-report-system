@@ -48,6 +48,16 @@ export function validateMaterialQty(qty: number | undefined, field = 'remainingQ
   return null;
 }
 
+export function validateMaterialSpecification(
+  specification: string | undefined,
+): FieldError | null {
+  if (specification == null || specification === '') return null;
+  if (specification.length > 200) {
+    return { field: 'specification', message: ValidationMessages.materialSpecificationMax };
+  }
+  return null;
+}
+
 export function validateMaterialRequestNote(note: string | undefined): FieldError | null {
   if (note == null || note === '') return null;
   if (note.length > 50) {

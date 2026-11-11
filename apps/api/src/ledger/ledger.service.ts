@@ -14,7 +14,9 @@ import {
   validateLedgerCategory,
   validateLedgerDate,
   validateLedgerDescription,
+  validateLedgerPayerOnIncome,
   validateLedgerType,
+  ValidationMessages,
 } from '@yc/validation';
 
 @Injectable()
@@ -31,7 +33,7 @@ export class LedgerService {
 
   private assertAdminOrOwner(account: SessionAccount) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
   }
 
@@ -93,6 +95,7 @@ export class LedgerService {
       validateLedgerAmount(body.amount),
       validateLedgerDescription(body.description),
       validateLedgerCategory(body.category),
+      validateLedgerPayerOnIncome(body.type, body.payerAccountId),
     ]) {
       if (err) throw new BadRequestException(err.message);
     }
@@ -109,7 +112,9 @@ export class LedgerService {
       })
       .select('id')
       .single();
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      throw new BadRequestException(ValidationMessages.ledgerDescriptionRequired);
+    }
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
@@ -148,7 +153,7 @@ export class LedgerService {
       throw new BadRequestException('此紀錄有證據檔案，不能刪除，只能作廢');
     }
     if (row?.voided_at) {
-      throw new BadRequestException('已作廢的紀錄不能刪除');
+      throw new BadRequestException(ValidationMessages.ledgerRecordVoided);
     }
     await this.db().from('ledger_entries').delete().eq('id', entryId);
     await this.audit.write({
@@ -200,17 +205,19 @@ export class LedgerService {
       'image/webp',
     ];
     if (!allowed.includes(file.mimetype)) {
-      throw new BadRequestException('不支援的檔案格式');
+      throw new BadRequestException(ValidationMessages.evidenceFormatInvalid);
     }
     if (file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException('檔案超過 10MB');
+      throw new BadRequestException(ValidationMessages.evidenceSizeExceeded);
     }
     const path = `${entryId}/${Date.now()}-${file.originalname}`;
     const client = this.supabase.getServiceClient();
     const { error: upErr } = await client.storage
       .from('ledger-evidence')
       .upload(path, file.buffer, { contentType: file.mimetype, upsert: false });
-    if (upErr) throw new BadRequestException(upErr.message);
+    if (upErr) {
+      throw new BadRequestException(ValidationMessages.evidenceFormatInvalid);
+    }
 
     await this.db()
       .from('ledger_evidence_files')
@@ -260,7 +267,7 @@ export class LedgerService {
       .single();
     if (!row) throw new NotFoundException();
     if (row.voided_at) {
-      throw new BadRequestException('已作廢的紀錄不能沖銷');
+      throw new BadRequestException(ValidationMessages.ledgerRecordVoided);
     }
     if (row.type !== 'EXPENSE') {
       throw new BadRequestException('僅支出可沖銷');

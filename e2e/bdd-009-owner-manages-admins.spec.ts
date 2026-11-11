@@ -17,7 +17,7 @@ test('BDD-009 owner creates admin; admin blocked', async ({ request }) => {
     data: { displayName: '種子管理員', password: SEED_PASSWORD },
   });
   const ac = admin.headersArray().find((h) => h.name === 'set-cookie')?.value.split(';')[0]!;
-  const blocked = await request.post(`${API}/admin/admins`, {
+  const blocked = await request.post(`${API}/owner/admins`, {
     headers: { Cookie: ac },
     data: { displayName: 'blocked', password: SEED_PASSWORD },
   });

@@ -71,12 +71,18 @@ export class AccountsController {
   @Roles('USER', 'ADMIN', 'OWNER')
   changePassword(
     @CurrentAccount() actor: SessionAccount,
-    @Body() body: { currentPassword: string; newPassword: string },
+    @Body()
+    body: {
+      currentPassword: string;
+      newPassword: string;
+      newPasswordConfirm?: string;
+    },
   ) {
     return this.accounts.changePassword(
       actor,
       body.currentPassword,
       body.newPassword,
+      body.newPasswordConfirm,
     );
   }
 

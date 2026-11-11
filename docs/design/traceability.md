@@ -76,7 +76,7 @@ CI enforces B-001–B-050 via `scripts/check-b-rule-coverage.mjs`; B-051–B-098
 | B-066 | `apps/api/test/integration/material-import_B066.spec.ts; apps/api/test/integration/s6a_B022_B031.spec.ts` | material-import_B066.spec.ts; B-036 B-066 xlsx import; B-036 B-066 xlsx import → accepts xlsx with required headers … |
 | B-067 | `apps/api/test/integration/rls-audit_B067.spec.ts` | rls-audit_B067.spec.ts |
 | B-068 | `apps/api/test/integration/s6b_rules.spec.ts` | B-068 personal trial; B-068 personal trial → B-068 trial returns gross and 10th flag … |
-| B-069 | `apps/api/test/integration/s6b_rules.spec.ts; e2e/ui-B063_B069_B071.spec.ts` | B-069 confirmation; B-069 confirmation → B-069 lists pending ordinary reports; ui-B063_B069_B071.spec.ts → B-069 confirmation zone filter and batch UI; ui-B063_B069_B071.spec.ts … |
+| B-069 | `apps/api/test/integration/confirmation_batch_B069.spec.ts; apps/api/test/integration/s6b_rules.spec.ts; e2e/ui-B063_B069_B071.spec.ts` | confirmation_batch_B069.spec.ts; B-069 confirmation; B-069 confirmation → B-069 lists pending ordinary reports; ui-B063_B069_B071.spec.ts → B-069 confirmation zone filter and batch UI … |
 | B-070 | `apps/api/test/integration/s6b_rules.spec.ts` | B-070 B-071 review surfaces; B-070 B-071 review surfaces → B-071 big-meter pending endpoint; B-070 B-071 review surfaces → B-070 materials pending for admin … |
 | B-071 | `apps/api/test/integration/s6b_rules.spec.ts; e2e/ui-B063_B069_B071.spec.ts` | B-070 B-071 review surfaces; B-070 B-071 review surfaces → B-071 big-meter pending endpoint; B-070 B-071 review surfaces → B-070 materials pending for admin; ui-B063_B069_B071.spec.ts → B-071 big-meter confirmation batch … |
 | B-072 | `apps/api/test/integration/payroll_B052.spec.ts` | payroll_B052.spec.ts |
