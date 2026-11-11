@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
+      - run: pnpm --filter @yc/validation run typecheck
+      - run: pnpm --filter @yc/allocation run typecheck
+      - run: pnpm --filter @yc/payroll run typecheck
+      - run: pnpm --filter @yc/bank-crypto run typecheck
+      - run: pnpm --filter @yc/api run typecheck
+      - run: pnpm --filter @yc/web run typecheck
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
+      - run: pnpm --filter @yc/validation run test:unit
+      - run: pnpm --filter @yc/allocation run test:unit
+      - run: pnpm --filter @yc/payroll run test:unit
+      - run: pnpm --filter @yc/bank-crypto run test:unit
+      - run: pnpm --filter @yc/api run test:unit
+      - run: node scripts/check-b-rule-coverage.mjs
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: pnpm install --frozen-lockfile
+      - run: supabase start -x studio,imgproxy,logflare,vector
+      - name: Export Supabase env
+        run: |
+          eval "$(supabase status -o env)"
+          echo "SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
+          echo "DATABASE_URL=${DB_URL}" >> $GITHUB_ENV
+      - run: supabase db reset
+      - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
+      - run: pnpm --filter @yc/api run build
+      - name: integration tests
+        env:
+          RUN_INTEGRATION_TESTS: '1'
+          API_PORT: '3001'
+          SESSION_SECRET: ci-test-session-secret-32-characters-min
+          SESSION_IDLE_MINUTES: '30'
+          SEED_PASSWORD: seedpass01
+          WEB_ORIGIN: http://127.0.0.1:3000
+          BANK_ENCRYPTION_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+        run: pnpm --filter @yc/api run test:integration
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: pnpm install --frozen-lockfile
+      - run: supabase start -x studio,imgproxy,logflare,vector
+      - name: Export Supabase env
+        run: |
+          eval "$(supabase status -o env)"
+          echo "SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
+          echo "DATABASE_URL=${DB_URL}" >> $GITHUB_ENV
+      - run: supabase db reset
+      - run: pnpm --filter @yc/validation run build
+      - run: pnpm --filter @yc/allocation run build
+      - run: pnpm --filter @yc/payroll run build
+      - run: pnpm --filter @yc/bank-crypto run build
+      - run: pnpm --filter @yc/api run build
+      - run: pnpm --filter @yc/web run build
+      - run: pnpm --filter @yc/e2e exec playwright install --with-deps chromium
+      - name: Playwright smoke
+        env:
+          API_PORT: '3001'
+          SESSION_SECRET: ci-test-session-secret-32-characters-min
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:3001
+          SEED_PASSWORD: seedpass01
+          WEB_ORIGIN: http://127.0.0.1:3000
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          BANK_ENCRYPTION_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          E2E_TESTS: '1'
+        run: pnpm --filter @yc/e2e run test
+      - name: Upload walkthrough evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yc-v0-walkthrough
+          path: |
+            docs/evidence/walkthrough/
+            e2e/test-results/
+          if-no-files-found: ignore

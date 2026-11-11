@@ -1,0 +1,21 @@
+# yc v0 local walkthrough transcript (secrets redacted)
+# Regenerate: see docs/RUN-LOCAL.md and e2e/walkthrough-v0.spec.ts
+
+$ supabase start
+$ supabase db reset
+$ eval "$(supabase status -o env)"
+$ export SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+$ export SESSION_SECRET=***redacted***
+$ export SEED_PASSWORD=***redacted***
+$ pnpm --filter @yc/api run build && pnpm --filter @yc/web run build
+$ pnpm --filter @yc/api run start  # :3001
+$ pnpm --filter @yc/web run start  # :3000
+$ E2E_TESTS=1 pnpm --filter @yc/e2e exec playwright test walkthrough-v0.spec.ts
+
+Steps exercised:
+- owner (Kuei): confirmation, audit log
+- admin (種子管理員): confirmation, payroll, ledger
+- west user (種子西區): report, history, materials
+- south user (種子南區): report
+
+Screenshots: 01-owner-confirmation.png … 09-user-south-report.png (written by Playwright on successful e2e run)
