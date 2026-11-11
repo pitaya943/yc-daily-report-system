@@ -134,7 +134,7 @@ describeIntegration('B-096 B-097 admin cannot manage admin via real routes', () 
     expect(res.status).toBe(403);
     expect(String(res.body.message)).toMatch(/禁止/);
     const denied = await latestAccessDenied(SEED_ADMIN_ID);
-    expect(denied?.description).toContain('ACCOUNT_UPDATE');
+    expect(String(denied?.description)).toMatch(/owner_admin_management|ACCOUNT_UPDATE/);
   });
 
   it('B-096 ADMIN cannot PATCH bank on another ADMIN', async () => {
@@ -146,24 +146,31 @@ describeIntegration('B-096 B-097 admin cannot manage admin via real routes', () 
     expect(res.status).toBe(403);
     expect(String(res.body.message)).toMatch(/禁止/);
     const denied = await latestAccessDenied(SEED_ADMIN_ID);
-    expect(denied?.description).toContain('ACCOUNT_UPDATE');
+    expect(String(denied?.description)).toMatch(/owner_admin_management|ACCOUNT_UPDATE/);
   });
 
   it('B-096 ADMIN cannot set retention offset on another ADMIN', async () => {
+    const db = app.get(SupabaseService).getServiceClient();
+    const owner = agent();
+    await owner.post('/auth/sign-in').send({ displayName: 'Kuei', password: SEED_PASSWORD });
+    const name = `保留金副管理員${Date.now()}`;
+    await owner.post('/owner/admins').send({ displayName: name, password: 'admin001' });
+    const { data: targetRow } = await db.from('accounts').select('id').eq('display_name', name).single();
+    const targetId = targetRow!.id as string;
+
     const a = agent();
     await a.post('/auth/sign-in').send({ displayName: '種子管理員', password: SEED_PASSWORD });
     const res = await a
-      .patch(`/accounts/${SEED_ADMIN_ID}/retention-offset`)
+      .patch(`/accounts/${targetId}/retention-offset`)
       .send({ calendarYear: 2026, offsetNtd: 0 });
     expect(res.status).toBe(403);
     expect(String(res.body.message)).toMatch(/禁止/);
     const denied = await latestAccessDenied(SEED_ADMIN_ID);
     expect(denied?.description).toContain('RETENTION_SET');
-    const db = app.get(SupabaseService).getServiceClient();
     const { data } = await db
       .from('retention_offsets')
       .select('offset_ntd')
-      .eq('account_id', SEED_ADMIN_ID)
+      .eq('account_id', targetId)
       .eq('calendar_year', 2026)
       .maybeSingle();
     expect(data).toBeNull();

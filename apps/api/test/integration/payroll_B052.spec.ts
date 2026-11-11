@@ -25,6 +25,10 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
 
   beforeEach(async () => {
     await resetSeedLockouts(app.get(SupabaseService));
+    const db = app.get(SupabaseService).getServiceClient();
+    await db
+      .from('unit_prices')
+      .upsert({ price_set: 'WEST', item_code: 'direct_13', price: 120 });
   });
 
   it('calculates payroll with non-zero gross for confirmed west report', async () => {

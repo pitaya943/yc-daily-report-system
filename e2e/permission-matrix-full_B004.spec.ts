@@ -139,8 +139,9 @@ async function assertRow(
         });
         expect(mod.status()).toBeLessThan(300);
         const check = await ownerReq.get('/accounts/manage');
+        expect(check.ok()).toBeTruthy();
         const adminRow = (
-          check.json().accounts as Array<{ id: string; fixed_salary?: number }>
+          (await check.json()).accounts as Array<{ id: string; fixed_salary?: number }>
         ).find((a) => a.id === adminId);
         expect(adminRow?.fixed_salary).toBe(7777);
         await ownerReq.patch(`/accounts/${adminId}/financials`, {
