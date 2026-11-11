@@ -16,6 +16,23 @@ function walkControllers(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+/** All non-spec TypeScript sources under apps/api/src (guards, pipes, services, …). */
+function walkApiSourceFiles(dir: string, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) {
+      walkApiSourceFiles(p, out);
+    } else if (name.endsWith('.ts') && !name.endsWith('.spec.ts')) {
+      out.push(p);
+    }
+  }
+  return out;
+}
+
+function relPath(full: string): string {
+  return full.replace(API_SRC + '/', '').replace(API_SRC + '\\', '');
+}
+
 /** [R4-5] Every mutating Nest route must appear in write-route-registry.ts. */
 function discoverMutatingRoutes(): Array<{ method: string; path: string }> {
   const routes: Array<{ method: string; path: string }> = [];
@@ -43,6 +60,9 @@ function registryKey(method: string, path: string): string {
   return `${method.toUpperCase()} ${path}`;
 }
 
+const HTTP_EXCEPTION_CLASSES =
+  'BadRequest|Forbidden|NotFound|Unauthorized|Conflict|ServiceUnavailable';
+
 describe('Vera round 4 — static gates', () => {
   it('[R4-5] write-route-registry includes every mutating controller route', () => {
     const discovered = discoverMutatingRoutes();
@@ -55,50 +75,33 @@ describe('Vera round 4 — static gates', () => {
     expect(missing).toEqual([]);
   });
 
-  const RAW_DB_MESSAGE_FILES = [
-    'materials/materials.service.ts',
-    'reports/reports.service.ts',
-    'retention/retention.service.ts',
-  ];
-
-  it('[R4-7] client responses must not pass raw DB error.message to clients', () => {
+  it('[R4-7] client responses must not pass raw error.message to clients', () => {
+    const passThrough = new RegExp(
+      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\(\\s*\\w+\\.message\\s*\\)`,
+      'g',
+    );
     const offenders: string[] = [];
-    for (const rel of RAW_DB_MESSAGE_FILES) {
-      const full = join(API_SRC, rel);
-      const text = readFileSync(full, 'utf8');
-      if (text.includes('throw new BadRequestException(error.message)')) {
-        offenders.push(rel);
+    for (const file of walkApiSourceFiles(API_SRC)) {
+      const text = readFileSync(file, 'utf8');
+      if (passThrough.test(text)) {
+        offenders.push(relPath(file));
       }
     }
     expect(offenders).toEqual([]);
   });
 
-  it('[R4-8] no bare NotFoundException() / ForbiddenException() in user-facing services', () => {
-    const serviceDir = API_SRC;
+  it('[R4-8] no empty HttpException constructors in apps/api/src', () => {
+    const emptyCtor = new RegExp(
+      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\(\\s*\\)`,
+      'g',
+    );
     const bad: string[] = [];
-    for (const file of walkControllers(serviceDir).concat(
-      walkServices(serviceDir),
-    )) {
+    for (const file of walkApiSourceFiles(API_SRC)) {
       const text = readFileSync(file, 'utf8');
-      if (
-        /throw new NotFoundException\(\)/.test(text) ||
-        /throw new ForbiddenException\(\)/.test(text)
-      ) {
-        bad.push(file.replace(API_SRC + '/', ''));
+      if (emptyCtor.test(text)) {
+        bad.push(relPath(file));
       }
     }
     expect(bad).toEqual([]);
   });
 });
-
-function walkServices(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory() && name !== 'test') {
-      walkServices(p, out);
-    } else if (name.endsWith('.service.ts')) {
-      out.push(p);
-    }
-  }
-  return out;
-}
