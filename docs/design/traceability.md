@@ -104,7 +104,7 @@ CI enforces B-001–B-050 via `scripts/check-b-rule-coverage.mjs`; B-051–B-098
 | B-094 | `apps/api/test/integration/s6b_rules.spec.ts` | B-094 incomplete prices; B-094 incomplete prices → B-094 blocks when unit price removed … |
 | B-095 | `apps/api/test/integration/s6b_rules.spec.ts; e2e/removed-behaviours_B095.spec.ts` | B-095 removed delete; B-095 removed delete → B-095 no permanent account delete route; removed-behaviours_B095.spec.ts → B-095 no permanent account delete API … |
 | B-096 | `apps/api/src/auth/guards/roles.guard.spec.ts; apps/api/test/integration/accounts_B074.spec.ts; apps/api/test/integration/authz-admin_B096.spec.ts` | B-006 B-096 RolesGuard; B-006 B-096 RolesGuard → allows OWNER for owner-only roles; B-006 B-096 RolesGuard → denies ADMIN for owner-only roles and logs ACCESS_DENIED; accounts_B074.spec.ts … |
-| B-097 | `apps/api/test/integration/authz-admin_B096.spec.ts` | authz-admin_B096.spec.ts |
+| B-097 | `apps/api/test/integration/authz-admin_B096.spec.ts` | authz-admin_B096.spec.ts; authz-admin_B096.spec.ts → B-097 ACCESS_DENIED rows are persisted for admin archive attempt |
 | B-098 | `apps/api/test/integration/s6b_rules.spec.ts` | s6b_rules.spec.ts; B-085 B-098 ledger evidence; B-085 B-098 ledger evidence → B-098 delete blocked after evidence upload; B-085 B-098 ledger evidence → B-085 evidence URL expiresIn 3600 … |
 
 ## BDD scenarios

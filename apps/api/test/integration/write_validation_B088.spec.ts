@@ -57,7 +57,7 @@ const REJECTIONS: Record<
     body: { bankAccount: '123' },
   },
   'retention-year-end': { method: 'post', path: '/retention/year-end', body: { year: -1 } },
-  'archive-daily': { method: 'post', path: '/archives/daily', body: { type: 'INVALID', reportDate: 'x' } },
+  'archive-daily': { method: 'post', path: '/archives/daily', body: { archiveDate: 'not-a-date' } },
 };
 
 describeIntegration('B-088 write route rejection per registry', () => {
