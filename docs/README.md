@@ -6,8 +6,8 @@ Index of the SOP docs. If this file and `AGENTS.md` disagree, this file wins.
 In-repo docs are bilingual EN + 繁體中文 side by side. Identifiers (`AGENTS.md`, paths, role names, tool names) stay untranslated.
 庫內文件中英並列。識別名稱（`AGENTS.md`、路徑、角色名、工具名）不翻譯。
 
-Product specs stay where they are. `docs/behavior-spec-final.md`, `docs/design/`, and `docs/verification/b088-inventory.md` are on `v0/prototype` (PR #1) and land on `main` when that PR merges. This index does not move them.
-產品規格維持原位。`docs/behavior-spec-final.md`、`docs/design/`、`docs/verification/b088-inventory.md` 在 `v0/prototype`（PR #1），該 PR 合併後才到 `main`。本索引不搬動它們。
+Product spec paths and where they live: [`AGENTS.md`](../AGENTS.md)「規格 / Specs」. This index does not move them.
+產品規格的路徑與所在分支：見 [`AGENTS.md`](../AGENTS.md) 的「規格 / Specs」。本索引不搬動它們。
 
 ## Rules / 規則
 

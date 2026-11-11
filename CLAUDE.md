@@ -1,1 +1,1 @@
-Read `AGENTS.md`. This repo is the YC daily report system (Next.js, NestJS, Supabase, Railway). Specs are not on `main` yet; use `docs/` on the v0 work (landing with PR #1), especially `docs/behavior-spec-final.md`.
+Read `AGENTS.md`. / 請讀 `AGENTS.md`。

@@ -1,9 +1,9 @@
 # yc-daily-report-system
 
-Prototype v0 work happens in pull requests. / Prototype v0 開發一律走 PR。
+Prototype v0 一律走 PR。目標與技術棧見 [`AGENTS.md`](AGENTS.md) 的「專案 / Project」。Prototype v0 work happens only through pull requests. Goal and stack: the Project section of `AGENTS.md`.
 
 ## Layout / 結構
 
-- `docs/README.md` — SOP docs index; the docs file wins / 文件索引，以 docs 檔為準
-- `docs/work-plan-template.md` — work-plan source of truth / 分工計畫的唯一來源
-- `docs/work-plans/` — approved work plans (`<id>.md`) / 已核可的分工計畫
+- [`docs/README.md`](docs/README.md) — SOP 文件索引 / SOP docs index
+- [`docs/work-plan-template.md`](docs/work-plan-template.md) — 空白分工計畫 / blank work plan
+- [`docs/work-plans/`](docs/work-plans/) — 已核可的分工計畫 / approved work plans
