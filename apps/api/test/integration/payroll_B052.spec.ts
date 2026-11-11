@@ -27,16 +27,15 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
     await resetSeedLockouts(app.get(SupabaseService));
   });
 
-  it('calculates payroll after confirmed report', async () => {
+  it('calculates payroll with non-zero gross for confirmed west report', async () => {
     const today = taipeiYmd();
     await clearWestUserReportsOnDate(app.get(SupabaseService), today);
 
     const user = request.agent(app.getHttpServer());
-    const userLogin = await user.post('/auth/sign-in').send({
+    await user.post('/auth/sign-in').send({
       displayName: '種子西區',
       password: SEED_PASSWORD,
     });
-    expect([200, 201]).toContain(userLogin.status);
     const { body: created } = await user
       .post('/reports')
       .send({
@@ -52,17 +51,22 @@ describeIntegration('B-052 B-072 payroll calculate snapshot', () => {
     });
     await admin.post(`/confirmation/${created.id}/confirm`).send({});
 
-    await admin
-      .post('/payroll/calculate')
-      .send({
-        startDate: today,
-        endDate: today,
-        is10thPayday: false,
-      })
-      .expect((res) => {
-        if (res.status >= 300) {
-          throw new Error(JSON.stringify(res.body));
-        }
-      });
+    const calc = await admin.post('/payroll/calculate').send({
+      startDate: today,
+      endDate: today,
+      is10thPayday: false,
+    });
+    expect(calc.status).toBeLessThan(300);
+    expect(calc.body.rowCount).toBeGreaterThan(0);
+
+    const db = app.get(SupabaseService).getServiceClient();
+    const { data: rows } = await db
+      .from('payroll_run_rows')
+      .select('gross, final_pay, display_name_snapshot')
+      .eq('run_id', calc.body.runId);
+    const west = (rows ?? []).find((r) => String(r.display_name_snapshot).includes('種子西區'));
+    expect(west).toBeTruthy();
+    expect(Number(west!.gross)).toBeGreaterThan(0);
+    expect(Number(west!.final_pay)).toBeGreaterThan(0);
   });
 });

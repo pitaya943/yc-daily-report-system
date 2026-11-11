@@ -14,6 +14,7 @@ import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { ExportService } from '../export/export.service';
 import { BankService } from '../bank/bank.service';
+import { validatePayrollDateRange } from '@yc/validation';
 
 const PAYROLL_BLOCK_MSG = '單價尚未設定完整，無法計算薪資，請先補齊單價';
 
@@ -51,9 +52,8 @@ export class PayrollService {
   ) {
     this.assertAdminOrOwner(account);
     const { startDate, endDate } = body;
-    if (startDate > endDate) {
-      throw new BadRequestException('日期區間無效');
-    }
+    const dateErr = validatePayrollDateRange(startDate, endDate);
+    if (dateErr) throw new BadRequestException(dateErr.message);
     const capYear = new Date(`${endDate}T12:00:00+08:00`).getUTCFullYear();
     const { data: capRow } = await this.db()
       .from('retention_annual_caps')

@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -13,7 +14,11 @@ import {
   ValidationMessages,
   validateBankAccountDigits,
   validateDisplayName,
+  validateFixedSalary,
+  validateInsuranceDeduction,
   validatePasswordLength,
+  validateRetentionOffset,
+  validateUninsuredRate,
 } from '@yc/validation';
 
 type AccountRow = {
@@ -47,7 +52,14 @@ export class AccountsService {
           'id, display_name, role, zone, big_meter, archived_at, bank_account_last4',
         )
         .order('display_name');
-      return { accounts: data ?? [] };
+      return {
+        accounts: (data ?? []).map((a) => ({
+          ...a,
+          bank_account_last4: this.bank.formatBankLast4(
+            a.bank_account_last4 as string | null,
+          ),
+        })),
+      };
     }
     if (actor.role === 'ADMIN') {
       const { data } = await this.db()
@@ -57,7 +69,14 @@ export class AccountsService {
         )
         .eq('role', 'USER')
         .order('display_name');
-      return { accounts: data ?? [] };
+      return {
+        accounts: (data ?? []).map((a) => ({
+          ...a,
+          bank_account_last4: this.bank.formatBankLast4(
+            a.bank_account_last4 as string | null,
+          ),
+        })),
+      };
     }
     throw new ForbiddenException();
   }
@@ -170,12 +189,12 @@ export class AccountsService {
   async archiveAccount(actor: SessionAccount, targetId: string) {
     const target = await this.getAccount(targetId);
     if (target.role === 'OWNER') {
-      throw new BadRequestException('owner cannot be archived');
+      throw new BadRequestException(ValidationMessages.cannotArchiveOwner);
     }
     if (target.archived_at) return { ok: true };
     if (actor.role === 'ADMIN') {
       if (actor.id === targetId) {
-        throw new ForbiddenException();
+        throw new ForbiddenException(ValidationMessages.cannotArchiveSelf);
       }
       if (target.role === 'ADMIN') {
         await this.audit.logAccessDenied(
@@ -183,7 +202,7 @@ export class AccountsService {
           actor.displayName,
           'ACCOUNT_ARCHIVE',
         );
-        throw new ForbiddenException();
+        throw new ForbiddenException('禁止存取');
       }
     }
 
@@ -213,7 +232,7 @@ export class AccountsService {
         actor.displayName,
         'ACCOUNT_RESTORE',
       );
-      throw new ForbiddenException();
+      throw new ForbiddenException('禁止存取');
     }
     await this.db()
       .from('accounts')
@@ -312,7 +331,16 @@ export class AccountsService {
     }
     const err = validateBankAccountDigits(bankAccount);
     if (err) throw new BadRequestException(err.message);
-    const { ciphertext, last4 } = this.bank.encryptForStorage(bankAccount);
+    let ciphertext: Buffer;
+    let last4: string;
+    try {
+      ({ ciphertext, last4 } = this.bank.encryptForStorage(bankAccount));
+    } catch (e) {
+      if (e instanceof ServiceUnavailableException) {
+        throw new BadRequestException(ValidationMessages.bankEncryptionUnavailable);
+      }
+      throw e;
+    }
     await this.db()
       .from('accounts')
       .update({
@@ -356,7 +384,10 @@ export class AccountsService {
       actionType: 'BANK_REVEAL',
       description: `查看完整銀行帳號：${data.display_name}`,
     });
-    return { account: full, last4: data.bank_account_last4 };
+    return {
+      account: full,
+      last4: this.bank.formatBankLast4(data.bank_account_last4),
+    };
   }
 
   private async lookupEmail(authUserId: string): Promise<string> {
@@ -379,24 +410,38 @@ export class AccountsService {
     },
   ) {
     if (actor.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException('禁止存取');
     }
     const target = await this.getAccount(targetId);
-    if (target.role === 'OWNER') throw new ForbiddenException();
+    if (target.role === 'OWNER') throw new ForbiddenException('禁止存取');
     const patch: Record<string, unknown> = {};
     if (body.paymentMethod) patch.payment_method = body.paymentMethod;
     if (body.insuranceDeduction !== undefined) {
+      const err = validateInsuranceDeduction(
+        body.insuranceDeduction,
+        body.insuranceDeduction > 0,
+      );
+      if (err) throw new BadRequestException(err.message);
       patch.insurance_deduction = body.insuranceDeduction;
     }
-    if (body.fixedSalary !== undefined) patch.fixed_salary = body.fixedSalary;
+    if (body.fixedSalary !== undefined) {
+      const err = validateFixedSalary(body.fixedSalary);
+      if (err) throw new BadRequestException(err.message);
+      patch.fixed_salary = body.fixedSalary;
+    }
     if (body.payFixedEveryPeriod !== undefined) {
       patch.pay_fixed_every_period = body.payFixedEveryPeriod;
     }
     if (body.uninsuredExempt !== undefined) {
       patch.uninsured_exempt = body.uninsuredExempt;
     }
-    if (body.uninsuredRateOverride !== undefined) {
+    if (body.uninsuredRateOverride !== undefined && body.uninsuredRateOverride !== null) {
+      const err = validateUninsuredRate(body.uninsuredRateOverride);
+      if (err) throw new BadRequestException(err.message);
       patch.uninsured_rate_override = body.uninsuredRateOverride;
+    }
+    if (body.uninsuredRateOverride === null) {
+      patch.uninsured_rate_override = null;
     }
     await this.db().from('accounts').update(patch).eq('id', targetId);
     await this.audit.write({
@@ -421,6 +466,8 @@ export class AccountsService {
       const target = await this.getAccount(targetId);
       if (target.role !== 'USER') throw new ForbiddenException();
     }
+    const offErr = validateRetentionOffset(body.offsetNtd);
+    if (offErr) throw new BadRequestException(offErr.message);
     await this.db()
       .from('retention_offsets')
       .upsert({

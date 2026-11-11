@@ -3,6 +3,13 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { taipeiYmd } from '../common/taipei-time';
+import {
+  ValidationMessages,
+  validateGlobalRetentionRate,
+  validateRetentionCap,
+  validateUninsuredRate,
+  validateUnitPrice,
+} from '@yc/validation';
 
 @Injectable()
 export class SettingsService {
@@ -33,9 +40,8 @@ export class SettingsService {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
       throw new ForbiddenException();
     }
-    if (!Number.isInteger(capNtd) || capNtd < 0) {
-      throw new BadRequestException('保留金年度上限須為 0 以上的整數');
-    }
+    const capErr = validateRetentionCap(capNtd);
+    if (capErr) throw new BadRequestException(capErr.message);
     const year = new Date(`${taipeiYmd()}T12:00:00+08:00`).getUTCFullYear();
     const { data: old } = await this.db()
       .from('retention_annual_caps')
@@ -72,7 +78,8 @@ export class SettingsService {
     price: number,
   ) {
     this.assertAdmin(account);
-    if (price < 0) throw new BadRequestException('單價須 ≥ 0');
+    const priceErr = validateUnitPrice(price);
+    if (priceErr) throw new BadRequestException(priceErr.message);
     await this.db()
       .from('unit_prices')
       .upsert({
@@ -115,15 +122,23 @@ export class SettingsService {
     const row: Record<string, unknown> = {};
     if (patch.tabName1 !== undefined) row.tab_name_1 = patch.tabName1;
     if (patch.uninsuredRateWest !== undefined) {
+      const err = validateUninsuredRate(patch.uninsuredRateWest);
+      if (err) throw new BadRequestException(err.message);
       row.uninsured_rate_west = patch.uninsuredRateWest;
     }
     if (patch.uninsuredRateSouth !== undefined) {
+      const err = validateUninsuredRate(patch.uninsuredRateSouth);
+      if (err) throw new BadRequestException(err.message);
       row.uninsured_rate_south = patch.uninsuredRateSouth;
     }
     if (patch.globalRetentionWest !== undefined) {
+      const err = validateGlobalRetentionRate(patch.globalRetentionWest);
+      if (err) throw new BadRequestException(err.message);
       row.global_retention_west = patch.globalRetentionWest;
     }
     if (patch.globalRetentionSouth !== undefined) {
+      const err = validateGlobalRetentionRate(patch.globalRetentionSouth);
+      if (err) throw new BadRequestException(err.message);
       row.global_retention_south = patch.globalRetentionSouth;
     }
     await this.db().from('system_settings').update(row).eq('id', 1);

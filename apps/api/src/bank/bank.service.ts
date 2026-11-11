@@ -15,6 +15,19 @@ export class BankService {
   private key: Buffer | null = null;
   private attempted = false;
 
+  /** B-081 / Q-022 — true when encryption key is configured. */
+  hasEncryptionKey(): boolean {
+    return this.getKey() !== null;
+  }
+
+  /** Mask last four for API responses; without a key show 無法讀取. */
+  formatBankLast4(last4: string | null): string {
+    if (!this.hasEncryptionKey()) {
+      return ValidationMessages.bankDisplayUnreadable;
+    }
+    return last4 ?? '';
+  }
+
   private getKey(): Buffer | null {
     if (!this.attempted) {
       this.attempted = true;
@@ -29,9 +42,7 @@ export class BankService {
   requireKey(): Buffer {
     const key = this.getKey();
     if (!key) {
-      throw new ServiceUnavailableException(
-        ValidationMessages.bankEncryptionUnavailable,
-      );
+      throw new ServiceUnavailableException(ValidationMessages.bankDisplayUnreadable);
     }
     return key;
   }
@@ -50,9 +61,7 @@ export class BankService {
 
   decryptFromStorage(ciphertext: Buffer | null): string {
     if (!ciphertext) {
-      throw new ServiceUnavailableException(
-        ValidationMessages.bankEncryptionUnavailable,
-      );
+      throw new ServiceUnavailableException(ValidationMessages.bankDisplayUnreadable);
     }
     return decryptBankAccount(ciphertext, this.requireKey());
   }

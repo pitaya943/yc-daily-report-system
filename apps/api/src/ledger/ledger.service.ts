@@ -9,6 +9,13 @@ import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { taipeiYmd } from '../common/taipei-time';
 import { ExportService } from '../export/export.service';
+import {
+  validateLedgerAmount,
+  validateLedgerCategory,
+  validateLedgerDate,
+  validateLedgerDescription,
+  validateLedgerType,
+} from '@yc/validation';
 
 @Injectable()
 export class LedgerService {
@@ -80,11 +87,14 @@ export class LedgerService {
     },
   ) {
     this.assertAdminOrOwner(account);
-    if (body.amount < 1) {
-      throw new BadRequestException('金額須為正整數');
-    }
-    if (!body.description?.trim() || body.description.length > 200) {
-      throw new BadRequestException('摘要須為 1 到 200 字');
+    for (const err of [
+      validateLedgerDate(body.entryDate),
+      validateLedgerType(body.type),
+      validateLedgerAmount(body.amount),
+      validateLedgerDescription(body.description),
+      validateLedgerCategory(body.category),
+    ]) {
+      if (err) throw new BadRequestException(err.message);
     }
     const { data, error } = await this.db()
       .from('ledger_entries')

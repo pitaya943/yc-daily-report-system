@@ -2,9 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as session from 'express-session';
-import { ValidationPipe } from '@nestjs/common';
 import { loadConfig } from './config';
 import { assertSafeBootstrapEnv } from './bootstrap-env';
+import { createB088ValidationPipe } from './common/b088-validation-pipe';
 
 async function bootstrap() {
   assertSafeBootstrapEnv();
@@ -26,9 +26,7 @@ async function bootstrap() {
       },
     }),
   );
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
-  );
+  app.useGlobalPipes(createB088ValidationPipe());
   app.enableCors({
     origin: config.webOrigin,
     credentials: true,

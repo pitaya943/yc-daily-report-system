@@ -149,6 +149,13 @@ export class ReportsService {
       if (units > 0) items.push({ item_code: row.itemCode, qty_units: units });
     }
 
+    const customErr = validateCustomItem({
+      name: body.customItemName,
+      qty: body.customItemQty,
+      unitPrice: body.customItemUnitPrice,
+    });
+    if (customErr) throw new BadRequestException(customErr.message);
+
     const collaboratorIds = await this.resolveCollaborators(
       account,
       body.collaboratorIds ?? [],

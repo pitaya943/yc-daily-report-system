@@ -13,6 +13,12 @@ import {
   evaluateImportRow,
   stockColourHint,
   validateMaterialRequestQty,
+  validateMaterialName,
+  validateMaterialUnit,
+  validateMaterialCode,
+  validateMaterialTab,
+  validateMaterialQty,
+  validateMaterialRequestNote,
 } from '@yc/validation';
 import { Workbook } from 'exceljs';
 
@@ -72,6 +78,8 @@ export class MaterialsService {
     }
     const qtyErr = validateMaterialRequestQty(body.quantity);
     if (qtyErr) throw new BadRequestException(qtyErr.message);
+    const noteErr = validateMaterialRequestNote(body.note);
+    if (noteErr) throw new BadRequestException(noteErr.message);
 
     const { data: mat, error } = await this.db()
       .from('materials')
@@ -97,7 +105,7 @@ export class MaterialsService {
         applicant_id: account.id,
         material_id: body.materialId,
         quantity: body.quantity,
-        note: body.note?.slice(0, 50) ?? null,
+        note: body.note?.trim().slice(0, 50) || null,
         status: 'PENDING',
       })
       .select('id')
@@ -256,6 +264,15 @@ export class MaterialsService {
   ) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
       throw new ForbiddenException();
+    }
+    for (const err of [
+      validateMaterialName(body.name),
+      validateMaterialUnit(body.unit),
+      validateMaterialCode(body.code),
+      validateMaterialTab(body.tab),
+      validateMaterialQty(body.remainingQty),
+    ]) {
+      if (err) throw new BadRequestException(err.message);
     }
     const remaining = body.remainingQty ?? 0;
     const { data, error } = await this.db()
