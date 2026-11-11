@@ -7,7 +7,9 @@ import {
   Req,
   Res,
   Session,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from './guards/auth.guard';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { SessionAccount } from './types';
@@ -50,6 +52,7 @@ export class AuthController {
   }
 
   @Post('sign-out')
+  @UseGuards(AuthGuard)
   signOut(@Session() session: Request['session'], @Res() res: Response) {
     session.destroy(() => {
       res.clearCookie('yc_session');

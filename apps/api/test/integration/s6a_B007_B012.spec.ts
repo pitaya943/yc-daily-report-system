@@ -45,7 +45,11 @@ describeIntegration('S6a B-007–B-012', () => {
         .send({ displayName: '種子西區', password: SEED_PASSWORD });
       const res = await agent
         .post('/accounts/me/password')
-        .send({ currentPassword: 'wrong', newPassword: 'newpass01' });
+        .send({
+          currentPassword: 'wrong',
+          newPassword: 'newpass01',
+          newPasswordConfirm: 'newpass01',
+        });
       expect(res.status).toBe(400);
     });
   });

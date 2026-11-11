@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { ValidationMessages, validatePasswordLength } from '@yc/validation';
+import { throwFieldBadRequest } from '../common/field-error';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from './types';
 import { createHash } from 'crypto';
@@ -83,7 +84,7 @@ export class AuthService {
     }
     const passwordErr = validatePasswordLength(input.password);
     if (passwordErr) {
-      throw new BadRequestException(passwordErr.message);
+      throwFieldBadRequest(passwordErr);
     }
 
     await this.enforceRateLimit(input.clientAddress);

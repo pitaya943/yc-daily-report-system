@@ -134,7 +134,9 @@ describeIntegration('B-096 B-097 admin cannot manage admin via real routes', () 
     expect(res.status).toBe(403);
     expect(String(res.body.message)).toMatch(/禁止/);
     const denied = await latestAccessDenied(SEED_ADMIN_ID);
-    expect(String(denied?.description)).toMatch(/owner_admin_management|ACCOUNT_UPDATE/);
+    expect(String(denied?.description)).toMatch(
+      /ACCOUNT_FINANCIALS|ACCOUNT_UPDATE|財務/,
+    );
   });
 
   it('B-096 ADMIN cannot PATCH bank on another ADMIN', async () => {
@@ -146,7 +148,7 @@ describeIntegration('B-096 B-097 admin cannot manage admin via real routes', () 
     expect(res.status).toBe(403);
     expect(String(res.body.message)).toMatch(/禁止/);
     const denied = await latestAccessDenied(SEED_ADMIN_ID);
-    expect(String(denied?.description)).toMatch(/owner_admin_management|ACCOUNT_UPDATE/);
+    expect(String(denied?.description)).toMatch(/ACCOUNT_BANK|ACCOUNT_UPDATE|銀行/);
   });
 
   it('B-096 ADMIN cannot set retention offset on another ADMIN', async () => {

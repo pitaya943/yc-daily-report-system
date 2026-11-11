@@ -4,7 +4,8 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { ExportService } from '../export/export.service';
-import { ValidationMessages } from '@yc/validation';
+import { ValidationMessages, validatePayrollDateRange } from '@yc/validation';
+import { throwFieldBadRequest } from '../common/field-error';
 
 @Injectable()
 export class StatisticsService {
@@ -26,6 +27,8 @@ export class StatisticsService {
     if (account.role !== 'USER') {
       throw new ForbiddenException('管理員請使用薪資或統計頁');
     }
+    const rangeErr = validatePayrollDateRange(body.startDate, body.endDate);
+    if (rangeErr) throwFieldBadRequest(rangeErr);
     const { data: shares } = await this.db()
       .from('report_shares')
       .select('item_code, share_units, report_id')
@@ -121,6 +124,8 @@ export class StatisticsService {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
+    const rangeErr = validatePayrollDateRange(body.startDate, body.endDate);
+    if (rangeErr) throwFieldBadRequest(rangeErr);
     const { data: shares } = await this.db()
       .from('report_shares')
       .select('account_id, share_units, item_code, report_id');

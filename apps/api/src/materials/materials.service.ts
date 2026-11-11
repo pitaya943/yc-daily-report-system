@@ -22,6 +22,7 @@ import {
   validateMaterialSpecification,
 } from '@yc/validation';
 import { Workbook } from 'exceljs';
+import { throwFieldBadRequest } from '../common/field-error';
 
 @Injectable()
 export class MaterialsService {
@@ -78,23 +79,26 @@ export class MaterialsService {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const qtyErr = validateMaterialRequestQty(body.quantity);
-    if (qtyErr) throw new BadRequestException(qtyErr.message);
+    if (qtyErr) throwFieldBadRequest(qtyErr);
     const noteErr = validateMaterialRequestNote(body.note);
-    if (noteErr) throw new BadRequestException(noteErr.message);
+    if (noteErr) throwFieldBadRequest(noteErr);
 
     const { data: mat, error } = await this.db()
       .from('materials')
       .select('id, remaining_qty, hidden, quarantined, name')
       .eq('id', body.materialId)
       .single();
-    if (error || !mat) throw new NotFoundException();
+    if (error || !mat) {
+      throw new NotFoundException(ValidationMessages.materialNotFound);
+    }
     const requestableErr = assertMaterialRequestable({
       remaining_qty: Number(mat.remaining_qty),
       hidden: mat.hidden,
       quarantined: mat.quarantined,
     });
     if (requestableErr) {
-      throw new BadRequestException(requestableErr.message);
+      const validationMsg = requestableErr.message;
+      throw new BadRequestException(validationMsg);
     }
     if (Number(mat.remaining_qty) < body.quantity) {
       throw new BadRequestException(ValidationMessages.materialInsufficient);
@@ -111,7 +115,9 @@ export class MaterialsService {
       })
       .select('id')
       .single();
-    if (insErr) throw new BadRequestException(insErr.message);
+    if (insErr) {
+      throw new BadRequestException(ValidationMessages.materialInsufficient);
+    }
 
     await this.audit.write({
       actorId: account.id,
@@ -177,7 +183,9 @@ export class MaterialsService {
       p_request_id: requestId,
       p_reviewer_id: account.id,
     });
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      throw new BadRequestException(ValidationMessages.materialInsufficientApprove);
+    }
     const result = data as { ok: boolean; code: string };
     if (result.code === 'INSUFFICIENT') {
       throw new BadRequestException(ValidationMessages.materialInsufficientApprove);
@@ -206,7 +214,9 @@ export class MaterialsService {
       .select('id, status')
       .eq('id', requestId)
       .single();
-    if (!req) throw new NotFoundException();
+    if (!req) {
+      throw new NotFoundException(ValidationMessages.materialRequestNotFound);
+    }
     if (req.status !== 'PENDING') {
       throw new BadRequestException('此申請已處理');
     }
@@ -237,7 +247,9 @@ export class MaterialsService {
       .select('id, applicant_id, status')
       .eq('id', requestId)
       .single();
-    if (!req || req.applicant_id !== account.id) throw new NotFoundException();
+    if (!req || req.applicant_id !== account.id) {
+      throw new NotFoundException(ValidationMessages.materialRequestNotFound);
+    }
     if (req.status !== 'PENDING') {
       throw new BadRequestException('此申請已處理');
     }
@@ -274,7 +286,7 @@ export class MaterialsService {
       validateMaterialQty(body.remainingQty),
       validateMaterialSpecification(body.specification),
     ]) {
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
     }
     const remaining = body.remainingQty ?? 0;
     const { data, error } = await this.db()
@@ -320,7 +332,7 @@ export class MaterialsService {
     const patch: Record<string, unknown> = {};
     if (body.remainingQty != null) {
       const qtyErr = validateMaterialQty(body.remainingQty);
-      if (qtyErr) throw new BadRequestException(qtyErr.message);
+      if (qtyErr) throwFieldBadRequest(qtyErr);
       patch.remaining_qty = body.remainingQty;
     }
     if (body.cumulativeUsage != null) {
@@ -329,7 +341,7 @@ export class MaterialsService {
     if (body.hidden != null) patch.hidden = body.hidden;
     if (body.tab != null) {
       const tabErr = validateMaterialTab(body.tab);
-      if (tabErr) throw new BadRequestException(tabErr.message);
+      if (tabErr) throwFieldBadRequest(tabErr);
       patch.tab = body.tab;
     }
     if (patch.remaining_qty != null || patch.cumulative_usage != null) {
@@ -508,7 +520,9 @@ export class MaterialsService {
       .select('id, code, received_qty, cumulative_usage, remaining_qty, quarantine_note')
       .eq('id', materialId)
       .single();
-    if (!mat?.quarantine_note) throw new NotFoundException();
+    if (!mat?.quarantine_note) {
+      throw new NotFoundException(ValidationMessages.materialNotFound);
+    }
     const patch: Record<string, unknown> = {
       quarantined: false,
       quarantine_note: null,
@@ -538,7 +552,9 @@ export class MaterialsService {
       .select('id, quarantine_note, cumulative_usage')
       .eq('id', materialId)
       .single();
-    if (!mat?.quarantine_note) throw new NotFoundException();
+    if (!mat?.quarantine_note) {
+      throw new NotFoundException(ValidationMessages.materialNotFound);
+    }
     const m = /B=([0-9.]+)/.exec(mat.quarantine_note as string);
     const bQty = m ? Number(m[1]) : 0;
     const cumulative = Number(mat.cumulative_usage);

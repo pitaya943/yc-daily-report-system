@@ -105,7 +105,9 @@ export class ConfirmationService {
       )
       .eq('id', reportId)
       .single();
-    if (error || !report) throw new NotFoundException();
+    if (error || !report) {
+      throw new NotFoundException(ValidationMessages.confirmationNotFound);
+    }
     if (report.status !== 'PENDING') {
       return { skipped: true };
     }
@@ -176,7 +178,9 @@ export class ConfirmationService {
       .select('id, status, report_date')
       .eq('id', reportId)
       .single();
-    if (!report) throw new NotFoundException();
+    if (!report) {
+      throw new NotFoundException(ValidationMessages.confirmationNotFound);
+    }
     if (report.status !== 'PENDING') return { skipped: true };
 
     await this.db()

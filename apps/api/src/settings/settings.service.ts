@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/com
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
+import { throwFieldBadRequest } from '../common/field-error';
 import { taipeiYmd } from '../common/taipei-time';
 import {
   ValidationMessages,
@@ -25,7 +26,7 @@ export class SettingsService {
 
   async getRetentionCap(account: SessionAccount) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const year = new Date(`${taipeiYmd()}T12:00:00+08:00`).getUTCFullYear();
     const { data } = await this.db()
@@ -39,10 +40,10 @@ export class SettingsService {
   /** B-035 B-097 — applies current year only; no recalc of past runs */
   async setRetentionCap(account: SessionAccount, capNtd: number) {
     if (account.role !== 'ADMIN' && account.role !== 'OWNER') {
-      throw new ForbiddenException();
+      throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const capErr = validateRetentionCap(capNtd);
-    if (capErr) throw new BadRequestException(capErr.message);
+    if (capErr) throwFieldBadRequest(capErr);
     const year = new Date(`${taipeiYmd()}T12:00:00+08:00`).getUTCFullYear();
     const { data: old } = await this.db()
       .from('retention_annual_caps')
@@ -80,7 +81,7 @@ export class SettingsService {
   ) {
     this.assertAdmin(account);
     const priceErr = validateUnitPrice(price);
-    if (priceErr) throw new BadRequestException(priceErr.message);
+    if (priceErr) throwFieldBadRequest(priceErr);
     await this.db()
       .from('unit_prices')
       .upsert({
@@ -123,27 +124,27 @@ export class SettingsService {
     const row: Record<string, unknown> = {};
     if (patch.tabName1 !== undefined) {
       const tabErr = validateSettingsTabName(patch.tabName1);
-      if (tabErr) throw new BadRequestException(tabErr.message);
+      if (tabErr) throwFieldBadRequest(tabErr);
       row.tab_name_1 = patch.tabName1;
     }
     if (patch.uninsuredRateWest !== undefined) {
       const err = validateUninsuredRate(patch.uninsuredRateWest);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       row.uninsured_rate_west = patch.uninsuredRateWest;
     }
     if (patch.uninsuredRateSouth !== undefined) {
       const err = validateUninsuredRate(patch.uninsuredRateSouth);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       row.uninsured_rate_south = patch.uninsuredRateSouth;
     }
     if (patch.globalRetentionWest !== undefined) {
       const err = validateGlobalRetentionRate(patch.globalRetentionWest);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       row.global_retention_west = patch.globalRetentionWest;
     }
     if (patch.globalRetentionSouth !== undefined) {
       const err = validateGlobalRetentionRate(patch.globalRetentionSouth);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       row.global_retention_south = patch.globalRetentionSouth;
     }
     await this.db().from('system_settings').update(row).eq('id', 1);

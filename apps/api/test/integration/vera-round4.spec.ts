@@ -462,23 +462,23 @@ describeIntegration('Vera round 4 — failing acceptance tests (step 1)', () => 
     }
   });
 
-  it('[R4-5] reject insurance minimum when enrolled', async () => {
+  it('[R4-5] reject enrolled insurance choice with deduction 0', async () => {
     const db = app.get(SupabaseService).getServiceClient();
     const prev = await db
       .from('accounts')
-      .select('insurance_deduction')
+      .select('insurance_deduction, uninsured_exempt')
       .eq('id', WEST_USER_ID)
       .single();
     try {
       await db
         .from('accounts')
-        .update({ insurance_deduction: 834 })
+        .update({ insurance_deduction: 834, uninsured_exempt: false })
         .eq('id', WEST_USER_ID);
       const owner = agent();
       await owner.post('/auth/sign-in').send({ displayName: 'Kuei', password: SEED_PASSWORD });
       const res = await owner
         .patch(`/accounts/${WEST_USER_ID}/financials`)
-        .send({ insuranceDeduction: 0 });
+        .send({ insuranceEnrollment: 'ENROLLED', insuranceDeduction: 0 });
       expect(res.status).toBe(400);
       expect(JSON.stringify(res.body)).toContain(SPEC.insuranceEnrolledMin);
       const row = await db
@@ -490,7 +490,46 @@ describeIntegration('Vera round 4 — failing acceptance tests (step 1)', () => 
     } finally {
       await db
         .from('accounts')
-        .update({ insurance_deduction: prev.data?.insurance_deduction ?? 0 })
+        .update({
+          insurance_deduction: prev.data?.insurance_deduction ?? 0,
+          uninsured_exempt: prev.data?.uninsured_exempt ?? false,
+        })
+        .eq('id', WEST_USER_ID);
+    }
+  });
+
+  it('[R4-5] switching to not-enrolled with deduction 0 succeeds', async () => {
+    const db = app.get(SupabaseService).getServiceClient();
+    const prev = await db
+      .from('accounts')
+      .select('insurance_deduction, uninsured_exempt')
+      .eq('id', WEST_USER_ID)
+      .single();
+    try {
+      await db
+        .from('accounts')
+        .update({ insurance_deduction: 834, uninsured_exempt: false })
+        .eq('id', WEST_USER_ID);
+      const owner = agent();
+      await owner.post('/auth/sign-in').send({ displayName: 'Kuei', password: SEED_PASSWORD });
+      const res = await owner
+        .patch(`/accounts/${WEST_USER_ID}/financials`)
+        .send({ insuranceEnrollment: 'NOT_ENROLLED', insuranceDeduction: 0 });
+      expect(res.status).toBe(200);
+      const row = await db
+        .from('accounts')
+        .select('insurance_deduction, uninsured_exempt')
+        .eq('id', WEST_USER_ID)
+        .single();
+      expect(row.data?.insurance_deduction).toBe(0);
+      expect(row.data?.uninsured_exempt).toBe(false);
+    } finally {
+      await db
+        .from('accounts')
+        .update({
+          insurance_deduction: prev.data?.insurance_deduction ?? 0,
+          uninsured_exempt: prev.data?.uninsured_exempt ?? false,
+        })
         .eq('id', WEST_USER_ID);
     }
   });

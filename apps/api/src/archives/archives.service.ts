@@ -149,7 +149,9 @@ export class ArchivesService {
       .select('id, xlsx_path, pdf_path, archive_date')
       .eq('id', archiveId)
       .single();
-    if (!row) throw new NotFoundException();
+    if (!row) {
+      throw new NotFoundException(ValidationMessages.archiveNotFound);
+    }
     const client = this.supabase.getServiceClient();
     const links: Record<string, string> = {};
     const expiresIn = 3600;
@@ -182,7 +184,9 @@ export class ArchivesService {
       .select('id, xlsx_path, pdf_path')
       .eq('id', archiveId)
       .single();
-    if (!row) throw new NotFoundException();
+    if (!row) {
+      throw new NotFoundException(ValidationMessages.archiveNotFound);
+    }
     const client = this.supabase.getServiceClient();
     const paths = [row.xlsx_path, row.pdf_path].filter(Boolean) as string[];
     if (paths.length) {

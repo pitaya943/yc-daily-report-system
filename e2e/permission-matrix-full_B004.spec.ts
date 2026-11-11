@@ -224,7 +224,11 @@ async function assertRow(
         expect(
           (
             await userReq.post('/accounts/me/password', {
-              data: { currentPassword: SEED_PASSWORD, newPassword: SEED_PASSWORD },
+              data: {
+                currentPassword: SEED_PASSWORD,
+                newPassword: SEED_PASSWORD,
+                newPasswordConfirm: SEED_PASSWORD,
+              },
             })
           ).status(),
         ).toBeLessThan(300);

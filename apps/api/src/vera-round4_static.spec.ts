@@ -61,7 +61,32 @@ function registryKey(method: string, path: string): string {
 }
 
 const HTTP_EXCEPTION_CLASSES =
-  'BadRequest|Forbidden|NotFound|Unauthorized|Conflict|ServiceUnavailable';
+  'BadRequest|Forbidden|NotFound|Unauthorized|Conflict|ServiceUnavailable|InternalServerError|UnprocessableEntity|HttpException';
+
+function findRawMessagePassthrough(text: string): boolean {
+  const patterns = [
+    new RegExp(
+      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*?\\w+\\.message`,
+    ),
+    new RegExp(
+      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*?\\?\\.message`,
+    ),
+    new RegExp(
+      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*message:\\s*\\w+\\.message`,
+    ),
+    new RegExp(
+      `new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\([^)]*?\\w+\\.message`,
+    ),
+  ];
+  return patterns.some((re) => re.test(text));
+}
+
+function findEmptyHttpExceptionCtor(text: string): boolean {
+  const re = new RegExp(
+    `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\(\\s*\\)`,
+  );
+  return re.test(text);
+}
 
 describe('Vera round 4 — static gates', () => {
   it('[R4-5] write-route-registry includes every mutating controller route', () => {
@@ -76,14 +101,10 @@ describe('Vera round 4 — static gates', () => {
   });
 
   it('[R4-7] client responses must not pass raw error.message to clients', () => {
-    const passThrough = new RegExp(
-      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\(\\s*\\w+\\.message\\s*\\)`,
-      'g',
-    );
     const offenders: string[] = [];
     for (const file of walkApiSourceFiles(API_SRC)) {
       const text = readFileSync(file, 'utf8');
-      if (passThrough.test(text)) {
+      if (findRawMessagePassthrough(text)) {
         offenders.push(relPath(file));
       }
     }
@@ -91,14 +112,10 @@ describe('Vera round 4 — static gates', () => {
   });
 
   it('[R4-8] no empty HttpException constructors in apps/api/src', () => {
-    const emptyCtor = new RegExp(
-      `throw\\s+new\\s+(${HTTP_EXCEPTION_CLASSES})Exception\\s*\\(\\s*\\)`,
-      'g',
-    );
     const bad: string[] = [];
     for (const file of walkApiSourceFiles(API_SRC)) {
       const text = readFileSync(file, 'utf8');
-      if (emptyCtor.test(text)) {
+      if (findEmptyHttpExceptionCtor(text)) {
         bad.push(relPath(file));
       }
     }

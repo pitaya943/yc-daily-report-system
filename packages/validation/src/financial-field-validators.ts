@@ -22,6 +22,25 @@ export function validateGlobalRetentionRate(rate: number): FieldError | null {
   return null;
 }
 
+/** B-034 per-item retention (same numeric rules as global). */
+export function validatePerItemRetentionRate(rate: number): FieldError | null {
+  if (!Number.isInteger(rate) || rate < 0 || rate > 9999) {
+    return {
+      field: 'rateNtd',
+      message: ValidationMessages.perItemRetentionRate,
+    };
+  }
+  return null;
+}
+
+export function validateZone(zone: string | undefined): FieldError | null {
+  if (zone == null) return null;
+  if (zone !== 'WEST' && zone !== 'SOUTH') {
+    return { field: 'zone', message: ValidationMessages.zoneRequired };
+  }
+  return null;
+}
+
 export function validateUninsuredRate(rate: number): FieldError | null {
   if (rate < 0 || rate > 100) {
     return { field: 'rate', message: ValidationMessages.uninsuredRateRange };

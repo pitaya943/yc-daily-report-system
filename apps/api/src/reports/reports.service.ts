@@ -15,6 +15,7 @@ import {
   validateReportDate,
 } from '@yc/validation';
 import { taipeiYmd } from '../common/taipei-time';
+import { throwFieldBadRequest } from '../common/field-error';
 import { ExportService } from '../export/export.service';
 
 type PriceSet = 'WEST' | 'SOUTH' | 'BIG_METER';
@@ -37,7 +38,9 @@ export class ReportsService {
       .select('id, zone, big_meter, role, archived_at, display_name')
       .eq('id', accountId)
       .single();
-    if (error || !data) throw new NotFoundException();
+    if (error || !data) {
+      throw new NotFoundException(ValidationMessages.reportNotFound);
+    }
     return data;
   }
 
@@ -126,11 +129,11 @@ export class ReportsService {
     }
     const today = taipeiYmd();
     const dateErr = validateReportDate(body.reportDate, today);
-    if (dateErr) throw new BadRequestException(dateErr.message);
+    if (dateErr) throwFieldBadRequest(dateErr);
 
     const cap = await this.countOwnReportsOnDate(account.id, body.reportDate);
     const capErr = validateDailyCapCount(cap);
-    if (capErr) throw new BadRequestException(capErr.message);
+    if (capErr) throwFieldBadRequest(capErr);
 
     const profile = await this.getAccountProfile(account.id);
     const catalogue = this.priceSetFor(profile);
@@ -145,7 +148,7 @@ export class ReportsService {
       if (!allowedSet.has(row.itemCode)) continue;
       const units = this.qtyToUnits(row.qty ?? 0);
       const err = validateQtyUnits(units);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       if (units > 0) items.push({ item_code: row.itemCode, qty_units: units });
     }
 
@@ -154,7 +157,10 @@ export class ReportsService {
       qty: body.customItemQty,
       unitPrice: body.customItemUnitPrice,
     });
-    if (customErr) throw new BadRequestException(customErr.message);
+    if (customErr) {
+      const validationMsg = customErr.message;
+      throw new BadRequestException(validationMsg);
+    }
 
     const collaboratorIds = await this.resolveCollaborators(
       account,
@@ -175,7 +181,9 @@ export class ReportsService {
       })
       .select('id')
       .single();
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      throw new BadRequestException(ValidationMessages.reportNotFound);
+    }
 
     if (items.length) {
       await this.db().from('report_item_quantities').insert(
@@ -212,7 +220,9 @@ export class ReportsService {
       .select('id, submitter_id, status')
       .eq('id', reportId)
       .single();
-    if (error || !report) throw new NotFoundException();
+    if (error || !report) {
+      throw new NotFoundException(ValidationMessages.reportNotFound);
+    }
 
     if (account.role === 'USER') {
       if (report.submitter_id !== account.id) {
@@ -259,7 +269,7 @@ export class ReportsService {
       if (!allowedSet.has(row.itemCode)) continue;
       const units = this.qtyToUnits(row.qty ?? 0);
       const err = validateQtyUnits(units);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       if (units > 0) items.push({ item_code: row.itemCode, qty_units: units });
     }
 
@@ -292,7 +302,9 @@ export class ReportsService {
       .select('id, submitter_id, status')
       .eq('id', reportId)
       .single();
-    if (error || !report) throw new NotFoundException();
+    if (error || !report) {
+      throw new NotFoundException(ValidationMessages.reportNotFound);
+    }
 
     const isSubmitter = report.submitter_id === account.id;
     const isAdmin =
@@ -334,7 +346,10 @@ export class ReportsService {
         qty: body.customItemQty,
         unitPrice: body.customItemUnitPrice,
       });
-      if (customErr) throw new BadRequestException(customErr.message);
+      if (customErr) {
+      const validationMsg = customErr.message;
+      throw new BadRequestException(validationMsg);
+    }
       const name = body.customItemName?.trim() ?? '';
       if (!name) {
         await this.db()
@@ -456,7 +471,9 @@ export class ReportsService {
       )
       .eq('id', reportId)
       .single();
-    if (error || !report) throw new NotFoundException();
+    if (error || !report) {
+      throw new NotFoundException(ValidationMessages.reportNotFound);
+    }
 
     const isSubmitter = report.submitter_id === account.id;
     const isAdmin =

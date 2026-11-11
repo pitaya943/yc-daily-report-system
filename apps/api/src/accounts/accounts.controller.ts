@@ -8,7 +8,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
-import { Roles, RolesGuard } from '../auth/guards/roles.guard';
+import {
+  AccessDeniedAction,
+  Roles,
+  RolesGuard,
+} from '../auth/guards/roles.guard';
 import { CurrentAccount } from '../common/current-account.decorator';
 import { SessionAccount } from '../auth/types';
 import { AccountsService } from './accounts.service';
@@ -58,7 +62,8 @@ export class AccountsController {
   }
 
   @Post(':id/role')
-  @Roles('OWNER')
+  @Roles('ADMIN', 'OWNER')
+  @AccessDeniedAction('ACCOUNT_ROLE')
   switchRole(
     @CurrentAccount() actor: SessionAccount,
     @Param('id') id: string,
@@ -87,7 +92,8 @@ export class AccountsController {
   }
 
   @Patch(':id/bank')
-  @Roles('OWNER')
+  @Roles('ADMIN', 'OWNER')
+  @AccessDeniedAction('ACCOUNT_BANK')
   setBank(
     @CurrentAccount() actor: SessionAccount,
     @Param('id') id: string,
@@ -106,13 +112,25 @@ export class AccountsController {
   }
 
   @Patch(':id/financials')
-  @Roles('OWNER')
+  @Roles('ADMIN', 'OWNER')
+  @AccessDeniedAction('ACCOUNT_FINANCIALS')
   financials(
     @CurrentAccount() actor: SessionAccount,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
     return this.accounts.updateUserFinancials(actor, id, body as never);
+  }
+
+  @Patch(':id/item-retention-rates/:itemCode')
+  @Roles('ADMIN', 'OWNER')
+  itemRetention(
+    @CurrentAccount() actor: SessionAccount,
+    @Param('id') id: string,
+    @Param('itemCode') itemCode: string,
+    @Body() body: { rateNtd: number },
+  ) {
+    return this.accounts.setItemRetentionRate(actor, id, itemCode, body.rateNtd);
   }
 
   @Patch(':id/retention-offset')

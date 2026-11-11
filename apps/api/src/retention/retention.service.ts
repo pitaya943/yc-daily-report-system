@@ -62,7 +62,9 @@ export class RetentionService {
       })
       .select('id')
       .single();
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      throw new BadRequestException('保留金年度結算失敗');
+    }
     const lineRows = [...byAccount.entries()].map(([accountId, ytd]) => ({
       settlement_id: settlement.id,
       account_id: accountId,

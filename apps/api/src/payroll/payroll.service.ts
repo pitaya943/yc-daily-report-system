@@ -12,6 +12,7 @@ import { unitsToQty } from '@yc/allocation';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
+import { throwFieldBadRequest } from '../common/field-error';
 import { ExportService } from '../export/export.service';
 import { BankService } from '../bank/bank.service';
 import { validatePayrollDateRange, ValidationMessages } from '@yc/validation';
@@ -53,7 +54,7 @@ export class PayrollService {
     this.assertAdminOrOwner(account);
     const { startDate, endDate } = body;
     const dateErr = validatePayrollDateRange(startDate, endDate);
-    if (dateErr) throw new BadRequestException(dateErr.message);
+    if (dateErr) throwFieldBadRequest(dateErr);
     const capYear = new Date(`${endDate}T12:00:00+08:00`).getUTCFullYear();
     const { data: capRow } = await this.db()
       .from('retention_annual_caps')
@@ -141,7 +142,9 @@ export class PayrollService {
       })
       .select('id')
       .single();
-    if (runErr) throw new BadRequestException(runErr.message);
+    if (runErr) {
+      throw new BadRequestException(ValidationMessages.payrollDatesRequired);
+    }
 
     const rows: unknown[] = [];
     for (const acc of accounts ?? []) {

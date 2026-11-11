@@ -15,6 +15,11 @@ import { ValidationMessages } from '@yc/validation';
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: AccountRole[]) => SetMetadata(ROLES_KEY, roles);
 
+/** When role check fails, audit this attempted action (Q-058) instead of the generic bucket. */
+export const ACCESS_DENIED_ACTION_KEY = 'access_denied_action';
+export const AccessDeniedAction = (attempted: string) =>
+  SetMetadata(ACCESS_DENIED_ACTION_KEY, attempted);
+
 export const OWNER_ADMIN_ACTION = 'owner_admin_management';
 
 /** B-004, B-006, B-087, B-096 — server-side role enforcement. */
@@ -38,10 +43,15 @@ export class RolesGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const account = req.session.account!;
     if (!roles.includes(account.role)) {
+      const attempted =
+        this.reflector.getAllAndOverride<string>(ACCESS_DENIED_ACTION_KEY, [
+          context.getHandler(),
+          context.getClass(),
+        ]) ?? OWNER_ADMIN_ACTION;
       await this.audit.logAccessDenied(
         account.id,
         account.displayName,
-        OWNER_ADMIN_ACTION,
+        attempted,
       );
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }

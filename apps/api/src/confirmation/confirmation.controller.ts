@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -7,6 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ValidationMessages } from '@yc/validation';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentAccount } from '../common/current-account.decorator';
@@ -39,6 +41,9 @@ export class ConfirmationController {
     @CurrentAccount() account: SessionAccount,
     @Body() body: { reportIds: string[] },
   ) {
+    if (!body.reportIds?.length) {
+      throw new BadRequestException(ValidationMessages.accountRequired);
+    }
     return Promise.all(
       (body.reportIds ?? []).map((id) =>
         this.confirmation.rejectReport(account, id),
@@ -51,6 +56,9 @@ export class ConfirmationController {
     @CurrentAccount() account: SessionAccount,
     @Body() body: { reportIds: string[] },
   ) {
+    if (!body.reportIds?.length) {
+      throw new BadRequestException(ValidationMessages.accountRequired);
+    }
     return Promise.all(
       (body.reportIds ?? []).map((id) =>
         this.confirmation.confirmReport(account, id),

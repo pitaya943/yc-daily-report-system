@@ -9,6 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { SessionAccount } from '../auth/types';
 import { taipeiYmd } from '../common/taipei-time';
 import { ExportService } from '../export/export.service';
+import { throwFieldBadRequest } from '../common/field-error';
 import {
   validateLedgerAmount,
   validateLedgerCategory,
@@ -97,7 +98,7 @@ export class LedgerService {
       validateLedgerCategory(body.category),
       validateLedgerPayerOnIncome(body.type, body.payerAccountId),
     ]) {
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
     }
     const { data, error } = await this.db()
       .from('ledger_entries')
@@ -127,11 +128,27 @@ export class LedgerService {
   /** B-098 void */
   async voidEntry(account: SessionAccount, entryId: string) {
     this.assertAdminOrOwner(account);
-    await this.db()
+    const { data: row } = await this.db()
+      .from('ledger_entries')
+      .select('voided_at')
+      .eq('id', entryId)
+      .maybeSingle();
+    if (!row) {
+      throw new NotFoundException(ValidationMessages.ledgerEntryNotFound);
+    }
+    if (row.voided_at) {
+      throw new BadRequestException(ValidationMessages.ledgerRecordVoided);
+    }
+    const { data: updated, error } = await this.db()
       .from('ledger_entries')
       .update({ voided_at: new Date().toISOString() })
       .eq('id', entryId)
-      .is('voided_at', null);
+      .is('voided_at', null)
+      .select('id')
+      .maybeSingle();
+    if (error || !updated) {
+      throw new BadRequestException(ValidationMessages.ledgerRecordVoided);
+    }
     await this.audit.write({
       actorId: account.id,
       actorDisplayName: account.displayName,
@@ -265,7 +282,9 @@ export class LedgerService {
       .select('id, type, payer_account_id, voided_at')
       .eq('id', entryId)
       .single();
-    if (!row) throw new NotFoundException();
+    if (!row) {
+      throw new NotFoundException(ValidationMessages.ledgerEntryNotFound);
+    }
     if (row.voided_at) {
       throw new BadRequestException(ValidationMessages.ledgerRecordVoided);
     }

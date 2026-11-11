@@ -18,9 +18,12 @@ import {
   validateInsuranceDeduction,
   validatePasswordLength,
   validatePaymentMethod,
+  validatePerItemRetentionRate,
   validateRetentionOffset,
   validateUninsuredRate,
+  validateZone,
 } from '@yc/validation';
+import { throwFieldBadRequest } from '../common/field-error';
 
 type AccountRow = {
   id: string;
@@ -30,7 +33,10 @@ type AccountRow = {
   big_meter: boolean;
   archived_at: string | null;
   bank_account_last4: string | null;
+  bank_account_ciphertext: string | null;
   payment_method: 'TRANSFER' | 'CASH';
+  insurance_deduction: number;
+  uninsured_exempt: boolean;
 };
 
 @Injectable()
@@ -126,15 +132,8 @@ export class AccountsService {
     if (actor.role !== 'ADMIN' && actor.role !== 'OWNER') {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
-    if (actor.role === 'ADMIN') {
-      return this.createAccount(actor, {
-        displayName: body.displayName,
-        password: body.password,
-        role: 'USER',
-        zone: body.zone ?? 'WEST',
-        bigMeter: body.bigMeter ?? false,
-      });
-    }
+    const zoneErr = validateZone(body.zone);
+    if (zoneErr) throwFieldBadRequest(zoneErr);
     return this.createAccount(actor, {
       displayName: body.displayName,
       password: body.password,
@@ -155,9 +154,11 @@ export class AccountsService {
     },
   ) {
     const nameErr = validateDisplayName(input.displayName);
-    if (nameErr) throw new BadRequestException(nameErr.message);
+    if (nameErr) throwFieldBadRequest(nameErr);
     const pwErr = validatePasswordLength(input.password);
-    if (pwErr) throw new BadRequestException(pwErr.message);
+    if (pwErr) throwFieldBadRequest(pwErr);
+    const zoneErr = validateZone(input.zone);
+    if (zoneErr) throwFieldBadRequest(zoneErr);
 
     const trimmed = input.displayName.trim();
     const { data: dup } = await this.db()
@@ -278,6 +279,11 @@ export class AccountsService {
     role: 'USER' | 'ADMIN',
   ) {
     if (actor.role !== 'OWNER') {
+      await this.audit.logAccessDenied(
+        actor.id,
+        actor.displayName,
+        'ACCOUNT_ROLE',
+      );
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const target = await this.getAccount(targetId);
@@ -311,19 +317,19 @@ export class AccountsService {
     newPasswordConfirm?: string,
   ) {
     if (
-      newPasswordConfirm !== undefined &&
+      newPasswordConfirm === undefined ||
       newPassword !== newPasswordConfirm
     ) {
       throw new BadRequestException(ValidationMessages.passwordMismatch);
     }
     const pwErr = validatePasswordLength(newPassword);
-    if (pwErr) throw new BadRequestException(pwErr.message);
+    if (pwErr) throwFieldBadRequest(pwErr);
     const { data: acct } = await this.db()
       .from('accounts')
       .select('auth_user_id, display_name')
       .eq('id', actor.id)
       .single();
-    if (!acct) throw new NotFoundException();
+    if (!acct) throw new NotFoundException(ValidationMessages.accountNotFound);
     const anon = this.supabase.getAnonClient();
     const emailRow = await this.lookupEmail(acct.auth_user_id);
     const check = await anon.auth.signInWithPassword({
@@ -358,12 +364,15 @@ export class AccountsService {
       await this.audit.logAccessDenied(
         actor.id,
         actor.displayName,
-        'ACCOUNT_UPDATE',
+        'ACCOUNT_BANK',
       );
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const err = validateBankAccountDigits(bankAccount);
-    if (err) throw new BadRequestException(err.message);
+    if (err) {
+      const validationMsg = err.message;
+      throw new BadRequestException(validationMsg);
+    }
     let ciphertext: Buffer;
     let last4: string;
     try {
@@ -402,7 +411,9 @@ export class AccountsService {
       .select('display_name, bank_account_ciphertext, bank_account_last4')
       .eq('id', targetId)
       .single();
-    if (error || !data) throw new NotFoundException();
+    if (error || !data) {
+      throw new NotFoundException(ValidationMessages.accountNotFound);
+    }
     const raw = data.bank_account_ciphertext as string | null;
     const buf =
       raw && typeof raw === 'string' && raw.startsWith('\\x')
@@ -429,53 +440,87 @@ export class AccountsService {
     return data.user.email;
   }
 
-  /** B-013 B-015 B-017 B-018 owner updates financial fields on USER */
+  /** B-013 B-015 B-017 B-018 financial fields on USER (ADMIN); ADMIN/OWNER on ADMIN is owner-only for some fields. */
   async updateUserFinancials(
     actor: SessionAccount,
     targetId: string,
     body: {
       paymentMethod?: 'TRANSFER' | 'CASH';
       insuranceDeduction?: number;
+      insuranceEnrollment?: 'ENROLLED' | 'NOT_ENROLLED' | 'EXEMPT';
       fixedSalary?: number;
       payFixedEveryPeriod?: boolean;
       uninsuredExempt?: boolean;
       uninsuredRateOverride?: number | null;
     },
   ) {
-    if (actor.role !== 'OWNER') {
-      await this.audit.logAccessDenied(
-        actor.id,
-        actor.displayName,
-        'ACCOUNT_UPDATE',
-      );
+    if (actor.role !== 'ADMIN' && actor.role !== 'OWNER') {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
     const target = await this.getAccount(targetId);
     if (target.role === 'OWNER') {
       throw new ForbiddenException(ValidationMessages.accessDenied);
     }
+    if (target.role !== 'USER' && actor.role !== 'OWNER') {
+      await this.audit.logAccessDenied(
+        actor.id,
+        actor.displayName,
+        'ACCOUNT_FINANCIALS',
+      );
+      throw new ForbiddenException(ValidationMessages.accessDenied);
+    }
     await this.rejectAdminModifyingPrivilegedTarget(
       actor,
       targetId,
-      'ACCOUNT_UPDATE',
+      'ACCOUNT_FINANCIALS',
     );
     const patch: Record<string, unknown> = {};
     if (body.paymentMethod !== undefined) {
       const pmErr = validatePaymentMethod(body.paymentMethod);
-      if (pmErr) throw new BadRequestException(pmErr.message);
+      if (pmErr) throwFieldBadRequest(pmErr);
+      if (body.paymentMethod === 'TRANSFER') {
+        const hasBank =
+          !!target.bank_account_ciphertext || !!target.bank_account_last4;
+        if (!hasBank) {
+          throw new BadRequestException(ValidationMessages.transferNeedsBank);
+        }
+      }
       patch.payment_method = body.paymentMethod;
     }
-    if (body.insuranceDeduction !== undefined) {
-      const err = validateInsuranceDeduction(
-        body.insuranceDeduction,
-        body.insuranceDeduction > 0,
-      );
-      if (err) throw new BadRequestException(err.message);
+    if (body.insuranceEnrollment !== undefined) {
+      if (body.insuranceEnrollment === 'ENROLLED') {
+        const ded =
+          body.insuranceDeduction !== undefined
+            ? body.insuranceDeduction
+            : target.insurance_deduction;
+        const err = validateInsuranceDeduction(ded, true);
+        if (err) throwFieldBadRequest(err);
+        patch.insurance_deduction = ded;
+        patch.uninsured_exempt = false;
+      } else if (body.insuranceEnrollment === 'NOT_ENROLLED') {
+        const ded = body.insuranceDeduction ?? 0;
+        const err = validateInsuranceDeduction(ded, false);
+        if (err) throwFieldBadRequest(err);
+        patch.insurance_deduction = 0;
+        patch.uninsured_exempt = false;
+      } else if (body.insuranceEnrollment === 'EXEMPT') {
+        patch.insurance_deduction = 0;
+        patch.uninsured_exempt = true;
+      } else {
+        throw new BadRequestException(ValidationMessages.insuranceDeductionInteger);
+      }
+    } else if (body.insuranceDeduction !== undefined) {
+      const enrolled = body.insuranceDeduction > 0;
+      const err = validateInsuranceDeduction(body.insuranceDeduction, enrolled);
+      if (err) throwFieldBadRequest(err);
       patch.insurance_deduction = body.insuranceDeduction;
+      if (body.insuranceDeduction === 0) {
+        patch.uninsured_exempt = target.uninsured_exempt;
+      }
     }
     if (body.fixedSalary !== undefined) {
       const err = validateFixedSalary(body.fixedSalary);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       patch.fixed_salary = body.fixedSalary;
     }
     if (body.payFixedEveryPeriod !== undefined) {
@@ -486,7 +531,7 @@ export class AccountsService {
     }
     if (body.uninsuredRateOverride !== undefined && body.uninsuredRateOverride !== null) {
       const err = validateUninsuredRate(body.uninsuredRateOverride);
-      if (err) throw new BadRequestException(err.message);
+      if (err) throwFieldBadRequest(err);
       patch.uninsured_rate_override = body.uninsuredRateOverride;
     }
     if (body.uninsuredRateOverride === null) {
@@ -498,6 +543,46 @@ export class AccountsService {
       actorDisplayName: actor.displayName,
       actionType: 'ACCOUNT_UPDATE',
       description: `更新 ${target.display_name} 財務欄位`,
+    });
+    return { ok: true };
+  }
+
+  /** B-034 per-item retention rate override. */
+  async setItemRetentionRate(
+    actor: SessionAccount,
+    targetId: string,
+    itemCode: string,
+    rateNtd: number,
+  ) {
+    if (actor.role !== 'ADMIN' && actor.role !== 'OWNER') {
+      throw new ForbiddenException(ValidationMessages.accessDenied);
+    }
+    await this.rejectAdminModifyingPrivilegedTarget(
+      actor,
+      targetId,
+      'RETENTION_SET',
+    );
+    const target = await this.getAccount(targetId);
+    if (target.role !== 'USER') {
+      throw new ForbiddenException(ValidationMessages.accessDenied);
+    }
+    const err = validatePerItemRetentionRate(rateNtd);
+    if (err) throwFieldBadRequest(err);
+    const { error } = await this.db()
+      .from('account_item_retention_rates')
+      .upsert({
+        account_id: targetId,
+        item_code: itemCode,
+        rate_ntd: rateNtd,
+      });
+    if (error) {
+      throw new BadRequestException(ValidationMessages.perItemRetentionRate);
+    }
+    await this.audit.write({
+      actorId: actor.id,
+      actorDisplayName: actor.displayName,
+      actionType: 'RETENTION_SET',
+      description: `工項 ${itemCode} 保留金費率 ${rateNtd}`,
     });
     return { ok: true };
   }
@@ -517,7 +602,7 @@ export class AccountsService {
       'RETENTION_SET',
     );
     const offErr = validateRetentionOffset(body.offsetNtd);
-    if (offErr) throw new BadRequestException(offErr.message);
+    if (offErr) throwFieldBadRequest(offErr);
     await this.db()
       .from('retention_offsets')
       .upsert({
@@ -539,11 +624,13 @@ export class AccountsService {
     const { data, error } = await this.db()
       .from('accounts')
       .select(
-        'id, display_name, role, zone, big_meter, archived_at, bank_account_last4, payment_method',
+        'id, display_name, role, zone, big_meter, archived_at, bank_account_last4, bank_account_ciphertext, payment_method, insurance_deduction, uninsured_exempt',
       )
       .eq('id', id)
       .single();
-    if (error || !data) throw new NotFoundException();
+    if (error || !data) {
+      throw new NotFoundException(ValidationMessages.accountNotFound);
+    }
     return data as AccountRow;
   }
 }

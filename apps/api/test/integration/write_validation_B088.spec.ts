@@ -102,6 +102,99 @@ const REJECTIONS: Record<
   },
   'retention-year-end': { method: 'post', path: '/retention/year-end', body: { year: -1 } },
   'archive-daily': { method: 'post', path: '/archives/daily', body: { archiveDate: 'not-a-date' } },
+  'auth-sign-out': { method: 'post', path: '/auth/sign-out' },
+  'material-approve': {
+    method: 'post',
+    path: '/materials/requests/00000000-0000-4000-8000-000000000099/approve',
+  },
+  'material-reject': {
+    method: 'post',
+    path: '/materials/requests/00000000-0000-4000-8000-000000000099/reject',
+  },
+  'material-cancel': {
+    method: 'post',
+    path: '/materials/requests/00000000-0000-4000-8000-000000000099/cancel',
+  },
+  'material-admin-delete': {
+    method: 'delete',
+    path: '/materials/admin/items/00000000-0000-4000-8000-000000000099',
+  },
+  'material-reset': { method: 'post', path: '/materials/admin/reset', body: {} },
+  'material-quarantine-a': {
+    method: 'post',
+    path: '/materials/admin/items/00000000-0000-4000-8000-000000000099/quarantine/keep-a',
+  },
+  'material-quarantine-b': {
+    method: 'post',
+    path: '/materials/admin/items/00000000-0000-4000-8000-000000000099/quarantine/sync-b',
+  },
+  'ledger-void': {
+    method: 'post',
+    path: '/ledger/entries/00000000-0000-4000-8000-000000000099/void',
+  },
+  'ledger-delete': {
+    method: 'delete',
+    path: '/ledger/entries/00000000-0000-4000-8000-000000000099',
+  },
+  'ledger-settle': {
+    method: 'post',
+    path: '/ledger/entries/00000000-0000-4000-8000-000000000099/settle',
+  },
+  'unit-price': {
+    method: 'patch',
+    path: '/settings/unit-prices/WEST/direct_13',
+    body: { price: -1 },
+  },
+  'account-archive': {
+    method: 'post',
+    path: '/accounts/b0000001-0001-4000-8000-000000000001/archive',
+  },
+  'account-restore': {
+    method: 'post',
+    path: '/accounts/b0000001-0001-4000-8000-000000000099/restore',
+  },
+  'account-role': {
+    method: 'post',
+    path: '/accounts/b0000001-0001-4000-8000-000000000001/role',
+    body: { role: 'USER' },
+  },
+  'account-item-retention': {
+    method: 'patch',
+    path: '/accounts/b0000001-0001-4000-8000-000000000003/item-retention-rates/direct_13',
+    body: { rateNtd: -1 },
+  },
+  'archive-delete': {
+    method: 'delete',
+    path: '/archives/00000000-0000-4000-8000-000000000099',
+  },
+  'confirmation-batch-reject': {
+    method: 'post',
+    path: '/confirmation/batch/reject',
+    body: { reportIds: [] },
+  },
+  'confirmation-batch-confirm': {
+    method: 'post',
+    path: '/confirmation/batch/confirm',
+    body: { reportIds: [] },
+  },
+  'confirmation-confirm': {
+    method: 'post',
+    path: '/confirmation/00000000-0000-4000-8000-000000000099/confirm',
+  },
+  'confirmation-reject': {
+    method: 'post',
+    path: '/confirmation/00000000-0000-4000-8000-000000000099/reject',
+  },
+  'statistics-personal-trial': {
+    method: 'post',
+    path: '/statistics/personal-trial',
+    body: { startDate: 'bad', endDate: '2026-11-10' },
+  },
+  'statistics-summary-export': {
+    method: 'post',
+    path: '/statistics/summary-export',
+    body: { startDate: 'bad', endDate: '2026-11-10' },
+  },
 };
 
 describeIntegration('B-088 write route rejection per registry', () => {
@@ -131,19 +224,28 @@ describeIntegration('B-088 write route rejection per registry', () => {
     it(`B-088 rejects invalid ${row.validator} (${row.method} ${row.path})`, async () => {
       const spec = REJECTIONS[row.validator];
       expect(spec).toBeDefined();
+      const needsOwner =
+        row.validator === 'account-financials' ||
+        row.validator === 'bank-account' ||
+        row.validator === 'account-role' ||
+        row.validator === 'account-item-retention' ||
+        row.path.startsWith('/owner/') ||
+        row.validator === 'account-archive' && spec.path.includes('000001');
       const agent =
-        row.path.startsWith('/reports') && row.validator === 'report-create'
-          ? await authedAgent('user')
-          : row.path.startsWith('/materials/requests')
-            ? await authedAgent('user')
-            : row.path.startsWith('/owner/')
-              ? await authedAgent('owner')
-              : row.validator === 'account-financials' ||
-                  row.validator === 'bank-account'
+        row.validator === 'auth-sign-out'
+          ? request.agent(server())
+          : row.validator === 'auth-sign-in'
+            ? request.agent(server())
+            : row.path.startsWith('/reports') && row.validator === 'report-create'
+              ? await authedAgent('user')
+              : row.path.startsWith('/materials/requests') &&
+                  row.validator === 'material-request'
+                ? await authedAgent('user')
+              : needsOwner
                 ? await authedAgent('owner')
-              : row.path === '/accounts/users'
-                ? await authedAgent('admin')
-                : await authedAgent('admin');
+                : row.path === '/accounts/users'
+                  ? await authedAgent('admin')
+                  : await authedAgent('admin');
 
       let res;
       if (spec.method === 'post') {
