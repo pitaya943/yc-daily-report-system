@@ -58,3 +58,13 @@ Kuei decisions 2026-11-11 19:57、20:10、20:22、20:51（via Chief）。規格�
 - 訂閱額度用完時會顯示重置時間（例如「5-hour limit reached - resets [time]」），不是 HTTP 429；429 屬於 API key 或容量問題
 - GitHub Action（`@claude`）可能與 claude.ai／Claude Code web 共用同一份 Pro 額度（推論，官方未明說）
 - 本專案沒有另外的額度上限
+
+## Docs / 文件
+
+Detail / 細則: [docs/README.md](docs/README.md). If this summary and `docs/` disagree, docs wins / 以 docs 檔為準. In-repo docs are bilingual EN + 繁體中文 side by side; identifiers stay untranslated / 文件中英並列，識別名稱不翻譯。
+1. Single source / 單一來源: one maintained file per fact; other files link. Work-plan source is `docs/work-plan-template.md`; approved plans are `docs/work-plans/<id>.md`. Update this `AGENTS.md` summary in the same PR as the source. 每個事實一個維護檔。來源變更時，同一 PR 更新本摘要。
+2. Boundary / 分界: `AGENTS.md` is short standing rules for every run. Templates, decisions, work plans, and milestone summaries live in `docs/`. `README.md` is for humans. `AGENTS.md` 只留每次都要讀的短規則；範本與資料在 `docs/`；`README.md` 給人看。
+3. Decisions / 決策: append a row to `docs/decisions.md` (問題｜選擇｜理由｜日期). A change is a new row that names the row it replaces. Switch to MADR files when the table grows. 只追加列；要改就新增一列。表格變長再改 MADR 檔。
+4. Same PR / 同一 PR: a change to behaviour, a public interface, a process, or the owning doc is updated in that PR, not only the behaviour spec. On top of that, a spec change is in the same PR and is checked by tests. The spec is not frozen. 行為、公開介面、流程與所屬文件都在同一 PR 更新，不只行為規格。規格變更另外也在同一 PR，並由測試檢查。規格不凍結。
+5. CI / 檢查: pull requests run markdownlint and lychee on these SOP docs, plus the PR checklist. No CODEOWNERS. A command example the docs claim is runnable must be run in CI. PR 跑 markdownlint、lychee 與 checklist。沒有 CODEOWNERS。宣稱可執行的指令範例必須在 CI 裡跑。
+6. Vera / 驗證: before PASS, Vera checks the owning file was updated, the `AGENTS.md` summary still matches `docs/`, no parallel source was added, spec citations still resolve, and inventory citations (spec source, file:line, test name) still resolve. PASS 前核對來源已更新、摘要仍一致、沒有平行來源、規格引用與盤點表引用仍對得上。

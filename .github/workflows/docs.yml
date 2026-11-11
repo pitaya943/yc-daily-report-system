@@ -1,0 +1,42 @@
+name: Docs
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            AGENTS.md
+            CLAUDE.md
+            README.md
+            docs/**/*.md
+
+  lychee:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --config lychee.toml
+            --no-progress
+            AGENTS.md
+            CLAUDE.md
+            README.md
+            docs
+          fail: true
