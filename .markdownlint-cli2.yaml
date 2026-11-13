@@ -1,0 +1,10 @@
+# Existing SOP lines are long, use `<placeholders>`, and keep headings tight.
+# 既有 SOP 行很長、含 `<placeholder>`，標題下也不留空行。不改那些文句。
+config:
+  MD012: false
+  MD013: false
+  MD022: false
+  MD032: false
+  MD033: false
+  MD034: false
+  MD041: false

@@ -1,0 +1,7 @@
+# Link check for SOP docs. Accept 429 so a GitHub rate limit does not fail the PR.
+# SOP 文件的連結檢查。429 視為可接受，避免 GitHub 限流讓 PR 失敗。
+max_retries = 6
+retry_wait_time = 2
+accept = ["200..=299", "429"]
+timeout = 20
+exclude_path = [".claude"]
